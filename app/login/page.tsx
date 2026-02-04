@@ -76,14 +76,9 @@ export default function LoginPage() {
       setShowHint(false)
       setShouldShowHint(false)
     }
-    const targetTime = Math.max(video.duration - 1, 0)
-    const handleSeeked = () => {
-      video.pause()
-      video.removeEventListener("seeked", handleSeeked)
-    }
-    video.addEventListener("seeked", handleSeeked)
-    video.currentTime = targetTime
-    const remainingSeconds = Math.max(video.duration - 1 - targetTime, 0)
+    video.currentTime = 0
+    video.play().catch(() => {})
+    const remainingSeconds = Math.max(video.duration - 1 - video.currentTime, 0)
     scheduleHint(remainingSeconds * 1000)
   }, [scheduleHint])
 
@@ -174,7 +169,7 @@ export default function LoginPage() {
     <div className="relative min-h-screen w-full overflow-hidden bg-black text-white">
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-contain bg-black"
         autoPlay
         muted
         playsInline
