@@ -180,7 +180,7 @@ export default function LoginPage() {
         playsInline
         onLoadedMetadata={handleVideoMetadata}
       >
-        <source src="/loginy.mp4" type="video/mp4" />
+        <source src="/departments/loginy.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-black/35" />
 
