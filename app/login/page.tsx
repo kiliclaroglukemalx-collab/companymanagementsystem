@@ -74,13 +74,7 @@ export default function LoginPage() {
         >
           <form onSubmit={handleSubmit} className="absolute inset-0">
             <div
-              className={`absolute ${isShaking ? "shake" : ""}`}
-              style={{
-                top: "calc(45.8% + 505px)",
-                left: "calc(50% + 200px)",
-                width: "520px",
-                transform: "translate(-50%, -50%)",
-              }}
+              className={`absolute left-1/2 top-1/2 w-[520px] -translate-x-1/2 -translate-y-1/2 ${isShaking ? "shake" : ""}`}
             >
               <label htmlFor={inputId} className="sr-only">
                 Şifre
@@ -97,7 +91,7 @@ export default function LoginPage() {
                 }}
                 onFocus={handleFocusPrefetch}
                 placeholder="Password"
-                className="w-full rounded-lg border border-white/20 bg-black px-5 py-4 text-white outline-none focus:border-transparent focus:ring-2 focus:ring-white"
+                className="w-full bg-transparent px-5 py-4 text-black outline-none border-none focus:outline-none"
                 autoComplete="current-password"
                 disabled={isSubmitting}
               />
@@ -118,7 +112,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="mt-4 w-full rounded-lg border border-white/70 bg-black/80 px-5 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition-colors duration-200 hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-white"
+                className="mt-4 w-full bg-transparent px-5 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-transparent"
                 disabled={isSubmitting}
                 aria-label="Giriş Yap"
               >
