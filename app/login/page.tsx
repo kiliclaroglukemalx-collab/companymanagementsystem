@@ -93,10 +93,10 @@ export default function LoginPage() {
               placeholder="Password"
               className="absolute bg-transparent text-black outline-none border-none focus:outline-none"
               style={{
-                top: "calc(45.8% + 120px)",
-                left: "calc(50% + 80px)",
-                width: "400px",
-                height: "70px",
+                top: "calc(45.8% + 195px)",
+                left: "calc(50% + 130px)",
+                width: "440px",
+                height: "72px",
                 transform: "translate(-50%, -50%)",
               }}
               autoComplete="current-password"
@@ -120,7 +120,10 @@ export default function LoginPage() {
             <AnimatePresence mode="wait">
               {error && (
                 <motion.p
-                  className="absolute left-1/2 top-[64%] w-[320px] -translate-x-1/2 text-center text-sm text-rose-200"
+                  className="absolute left-1/2 w-[320px] -translate-x-1/2 text-center text-sm text-rose-200"
+                  style={{
+                    top: "calc(45.8% + 195px + 58px)",
+                  }}
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
