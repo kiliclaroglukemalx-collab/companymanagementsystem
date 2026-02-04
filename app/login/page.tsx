@@ -211,7 +211,7 @@ export default function LoginPage() {
                   onFocus={handleInputFocus}
                   onBlur={handleInputBlur}
                   placeholder=""
-                  className="h-full w-full bg-transparent px-5 py-0 text-center text-black font-bold leading-[3rem] outline-none border-none focus:outline-none"
+                  className="h-full w-full bg-transparent px-5 py-0 text-center text-white font-bold leading-[3rem] outline-none border-none focus:outline-none"
                   autoComplete="current-password"
                   disabled={isSubmitting}
                 />
@@ -219,7 +219,7 @@ export default function LoginPage() {
                   className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${showHint ? "opacity-100" : "opacity-0"}`}
                 >
                   <div className="flex h-20 w-20 items-center justify-center border border-black/50">
-                    <span className="text-[10px] font-bold leading-none tracking-[0.2em] text-black">
+                    <span className="text-[10px] font-bold leading-none tracking-[0.2em] text-white">
                       PASSWORD
                     </span>
                   </div>
