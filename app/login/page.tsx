@@ -34,6 +34,14 @@ export default function LoginPage() {
     return () => window.clearTimeout(timer)
   }, [isShaking])
 
+  useEffect(() => {
+    if (!error) {
+      return
+    }
+    const timer = window.setTimeout(() => setError(""), 3000)
+    return () => window.clearTimeout(timer)
+  }, [error])
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (isSubmitting || isSuccess) {
@@ -74,27 +82,29 @@ export default function LoginPage() {
         >
           <form onSubmit={handleSubmit} className="absolute inset-0">
             <div
-              className={`absolute left-1/2 top-1/2 w-[520px] -translate-x-1/2 -translate-y-1/2 ${isShaking ? "shake" : ""}`}
+              className={`absolute left-1/2 top-1/2 w-[450px] max-w-[90%] -translate-x-1/2 -translate-y-1/2 ${isShaking ? "shake" : ""}`}
             >
               <label htmlFor={inputId} className="sr-only">
                 Şifre
               </label>
-              <input
-                id={inputId}
-                type="password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value)
-                  if (error) {
-                    setError("")
-                  }
-                }}
-                onFocus={handleFocusPrefetch}
-                placeholder="Password"
-                className="w-full bg-transparent px-5 py-4 text-black outline-none border-none focus:outline-none"
-                autoComplete="current-password"
-                disabled={isSubmitting}
-              />
+              <div className="flex items-center">
+                <input
+                  id={inputId}
+                  type="password"
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value)
+                    if (error) {
+                      setError("")
+                    }
+                  }}
+                  onFocus={handleFocusPrefetch}
+                  placeholder="Password"
+                  className="h-12 w-full bg-transparent px-5 py-0 text-black outline-none border-none focus:outline-none"
+                  autoComplete="current-password"
+                  disabled={isSubmitting}
+                />
+              </div>
 
               <AnimatePresence mode="wait">
                 {error && (
@@ -130,14 +140,14 @@ export default function LoginPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.45 }}
+            transition={{ duration: 0.5 }}
           >
             <motion.div
               className="absolute inset-0 bg-black"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.75 }}
+              animate={{ opacity: 0.8 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.45 }}
+              transition={{ duration: 0.5 }}
             />
             <motion.div
               className="absolute inset-0 flex items-center justify-center backdrop-blur-sm"
