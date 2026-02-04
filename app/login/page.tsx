@@ -55,13 +55,20 @@ export default function LoginPage() {
       })
 
       if (!response.ok) {
-        throw new Error("invalid")
+        if (response.status === 401) {
+          throw new Error("invalid")
+        }
+        throw new Error("server")
       }
 
       setIsSuccess(true)
       window.setTimeout(() => router.push("/"), 500)
       return
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message === "server") {
+        setError("Sunucu ayarı eksik. AUTH_SECRET_KEY kontrol edin.")
+        return
+      }
       setError("Hatalı şifre, lütfen tekrar deneyin")
       setIsShaking(true)
     } finally {
