@@ -91,12 +91,12 @@ export default function LoginPage() {
               }}
               onFocus={handleFocusPrefetch}
               placeholder="Password"
-              className="absolute border border-red-500 bg-transparent text-black"
+              className="absolute bg-transparent text-black outline-none border-none focus:outline-none"
               style={{
-                top: "45.8%",
-                left: "50%",
-                width: "380px",
-                height: "66px",
+                top: "calc(45.8% + 120px)",
+                left: "calc(50% + 80px)",
+                width: "400px",
+                height: "70px",
                 transform: "translate(-50%, -50%)",
               }}
               autoComplete="current-password"
@@ -105,7 +105,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="absolute opacity-0"
+              className="absolute opacity-0 bg-transparent outline-none border-none focus:outline-none"
               style={{
                 top: "59.2%",
                 left: "50%",
