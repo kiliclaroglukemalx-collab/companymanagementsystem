@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(AUTH_COOKIE)?.value
-  const secret = process.env.AUTH_SECRET
+  const secret = process.env.AUTH_SECRET_KEY
 
   let isAuthed = false
   if (token && secret) {

@@ -62,7 +62,7 @@ export default function LoginPage() {
       window.setTimeout(() => router.push("/"), 500)
       return
     } catch {
-      setError("Şifre hatalı. Lütfen tekrar deneyin.")
+      setError("Hatalı şifre, lütfen tekrar deneyin")
       setIsShaking(true)
     } finally {
       setIsSubmitting(false)
@@ -125,7 +125,7 @@ export default function LoginPage() {
               <AnimatePresence mode="wait">
                 {error && (
                   <motion.p
-                    className="mt-2 text-center text-sm text-red-500"
+                    className="mt-2 text-center text-sm font-bold text-black"
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}

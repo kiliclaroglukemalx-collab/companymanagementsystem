@@ -5,7 +5,7 @@ const ADMIN_PASSWORD = "1530Bb_4560"
 const AUTH_COOKIE = "cms-auth"
 
 export async function POST(request: Request) {
-  const secret = process.env.AUTH_SECRET
+  const secret = process.env.AUTH_SECRET_KEY
   if (!secret) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
   }
