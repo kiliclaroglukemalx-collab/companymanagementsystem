@@ -50,57 +50,67 @@ export default function LoginPage() {
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         muted
-        loop
         playsInline
       >
         <source src="/departments/login-bg.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-black/35" />
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+      <div className="relative z-10 min-h-screen">
         <motion.div
-          className="w-full max-w-md -translate-y-2"
+          className="absolute inset-0"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <form
             onSubmit={handleSubmit}
-            className={`space-y-4 ${isShaking ? "shake" : ""}`}
+            className={`absolute inset-0 ${isShaking ? "shake" : ""}`}
           >
-            <div className="rounded-2xl border border-white/15 bg-white/10 px-6 py-5 shadow-[0_14px_45px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
-              <label htmlFor={inputId} className="sr-only">
-                Şifre
-              </label>
-              <input
-                id={inputId}
-                type="password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value)
-                  if (error) {
-                    setError("")
-                  }
-                }}
-                placeholder="Password"
-                className="w-full bg-transparent text-center text-lg font-medium tracking-[0.2em] text-white placeholder:text-white/55 focus:outline-none"
-                autoComplete="current-password"
-                disabled={isSubmitting}
-              />
-            </div>
+            <label htmlFor={inputId} className="sr-only">
+              Şifre
+            </label>
+            <input
+              id={inputId}
+              type="password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value)
+                if (error) {
+                  setError("")
+                }
+              }}
+              placeholder="Password"
+              className="absolute opacity-0"
+              style={{
+                top: "46.5%",
+                left: "50%",
+                width: "360px",
+                height: "64px",
+                transform: "translate(-50%, -50%)",
+              }}
+              autoComplete="current-password"
+              disabled={isSubmitting}
+            />
 
             <button
               type="submit"
-              className="w-full rounded-xl border border-white/20 bg-white/10 px-6 py-3 text-xs font-semibold uppercase tracking-[0.45em] text-white transition-all duration-300 hover:bg-white/20 hover:shadow-[0_0_28px_rgba(129,140,248,0.7)] focus-visible:shadow-[0_0_28px_rgba(129,140,248,0.7)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+              className="absolute opacity-0"
+              style={{
+                top: "58.5%",
+                left: "50%",
+                width: "240px",
+                height: "52px",
+                transform: "translate(-50%, -50%)",
+              }}
               disabled={isSubmitting}
-            >
-              Giriş Yap
-            </button>
+              aria-label="Giriş Yap"
+            />
 
             <AnimatePresence mode="wait">
               {error && (
                 <motion.p
-                  className="text-center text-sm text-rose-200"
+                  className="absolute left-1/2 top-[64%] w-[320px] -translate-x-1/2 text-center text-sm text-rose-200"
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
