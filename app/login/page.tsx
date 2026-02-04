@@ -114,19 +114,11 @@ export default function LoginPage() {
                     }
                   }}
                   onFocus={handleFocusPrefetch}
-                  placeholder=""
-                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold outline-none border-none focus:outline-none"
+                  placeholder="buraya tıklayıp arayüz şifresini giriniz"
+                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold leading-[3rem] outline-none border-none focus:outline-none placeholder:font-bold placeholder:text-black focus:placeholder:text-transparent focus:placeholder:opacity-0"
                   autoComplete="current-password"
                   disabled={isSubmitting}
                 />
-                <motion.p
-                  className="pointer-events-none absolute inset-0 flex items-center justify-center text-center text-sm font-bold text-black"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 3, duration: 0.8 }}
-                >
-                  buraya tıklayıp arayüz şifresini giriniz
-                </motion.p>
               </div>
 
               <AnimatePresence mode="wait">
