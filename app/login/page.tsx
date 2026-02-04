@@ -76,9 +76,9 @@ export default function LoginPage() {
             <div
               className={`absolute ${isShaking ? "shake" : ""}`}
               style={{
-                top: "calc(45.8% + 345px)",
-                left: "calc(50% + 160px)",
-                width: "460px",
+                top: "calc(45.8% + 505px)",
+                left: "calc(50% + 200px)",
+                width: "520px",
                 transform: "translate(-50%, -50%)",
               }}
             >
@@ -97,7 +97,7 @@ export default function LoginPage() {
                 }}
                 onFocus={handleFocusPrefetch}
                 placeholder="Password"
-                className="w-full rounded-lg border border-white bg-black px-5 py-4 text-white outline-none focus:border-transparent focus:ring-2 focus:ring-white"
+                className="w-full rounded-lg border border-white/20 bg-black px-5 py-4 text-white outline-none focus:border-transparent focus:ring-2 focus:ring-white"
                 autoComplete="current-password"
                 disabled={isSubmitting}
               />
@@ -132,19 +132,34 @@ export default function LoginPage() {
       <AnimatePresence>
         {isSuccess && (
           <motion.div
-            className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 z-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.45 }}
           >
             <motion.div
-              className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.5em] text-white"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              className="absolute inset-0 bg-black"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.75 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45 }}
+            />
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.35 }}
             >
-              Başarılı
+              <motion.div
+                className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.5em] text-white"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.35 }}
+              >
+                Başarılı
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
