@@ -72,67 +72,59 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <form
-            onSubmit={handleSubmit}
-            className={`absolute inset-0 ${isShaking ? "shake" : ""}`}
-          >
-            <label htmlFor={inputId} className="sr-only">
-              Şifre
-            </label>
-            <input
-              id={inputId}
-              type="password"
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value)
-                if (error) {
-                  setError("")
-                }
-              }}
-              onFocus={handleFocusPrefetch}
-              placeholder="Password"
-              className="absolute bg-transparent text-black outline-none border-none focus:outline-none"
+          <form onSubmit={handleSubmit} className="absolute inset-0">
+            <div
+              className={`absolute ${isShaking ? "shake" : ""}`}
               style={{
-                top: "calc(45.8% + 195px)",
-                left: "calc(50% + 130px)",
-                width: "440px",
-                height: "72px",
+                top: "calc(45.8% + 345px)",
+                left: "calc(50% + 160px)",
+                width: "460px",
                 transform: "translate(-50%, -50%)",
               }}
-              autoComplete="current-password"
-              disabled={isSubmitting}
-            />
+            >
+              <label htmlFor={inputId} className="sr-only">
+                Şifre
+              </label>
+              <input
+                id={inputId}
+                type="password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value)
+                  if (error) {
+                    setError("")
+                  }
+                }}
+                onFocus={handleFocusPrefetch}
+                placeholder="Password"
+                className="w-full rounded-lg border border-white bg-black px-5 py-4 text-white outline-none focus:border-transparent focus:ring-2 focus:ring-white"
+                autoComplete="current-password"
+                disabled={isSubmitting}
+              />
 
-            <button
-              type="submit"
-              className="absolute opacity-0 bg-transparent outline-none border-none focus:outline-none"
-              style={{
-                top: "59.2%",
-                left: "50%",
-                width: "250px",
-                height: "54px",
-                transform: "translate(-50%, -50%)",
-              }}
-              disabled={isSubmitting}
-              aria-label="Giriş Yap"
-            />
+              <AnimatePresence mode="wait">
+                {error && (
+                  <motion.p
+                    className="mt-2 text-center text-sm text-red-500"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
-            <AnimatePresence mode="wait">
-              {error && (
-                <motion.p
-                  className="absolute left-1/2 w-[320px] -translate-x-1/2 text-center text-sm text-rose-200"
-                  style={{
-                    top: "calc(45.8% + 195px + 58px)",
-                  }}
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {error}
-                </motion.p>
-              )}
-            </AnimatePresence>
+              <button
+                type="submit"
+                className="mt-4 w-full rounded-lg border border-white/70 bg-black/80 px-5 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition-colors duration-200 hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-white"
+                disabled={isSubmitting}
+                aria-label="Giriş Yap"
+              >
+                Giriş Yap
+              </button>
+            </div>
           </form>
         </motion.div>
       </div>
