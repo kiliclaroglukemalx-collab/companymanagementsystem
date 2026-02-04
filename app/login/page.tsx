@@ -69,6 +69,13 @@ export default function LoginPage() {
       return
     }
     hasVideoDurationRef.current = true
+    if (fallbackTimerRef.current) {
+      window.clearTimeout(fallbackTimerRef.current)
+    }
+    if (!hasTypedRef.current) {
+      setShowHint(false)
+      setShouldShowHint(false)
+    }
     const remainingSeconds = Math.max(video.duration - 1 - video.currentTime, 0)
     scheduleHint(remainingSeconds * 1000)
   }, [scheduleHint])
@@ -184,7 +191,7 @@ export default function LoginPage() {
               <label htmlFor={inputId} className="sr-only">
                 Şifre
               </label>
-              <div className="relative w-full">
+              <div className="relative h-12 w-full">
                 <input
                   id={inputId}
                   type="password"
@@ -202,16 +209,18 @@ export default function LoginPage() {
                   onFocus={handleInputFocus}
                   onBlur={handleInputBlur}
                   placeholder=""
-                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold leading-[3rem] outline-none border-none focus:outline-none"
+                  className="h-full w-full bg-transparent px-5 py-0 text-center text-black font-bold leading-[3rem] outline-none border-none focus:outline-none"
                   autoComplete="current-password"
                   disabled={isSubmitting}
                 />
                 <div
                   className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${showHint ? "opacity-100" : "opacity-0"}`}
                 >
-                  <p className="m-0 text-center text-sm font-bold leading-none text-black">
-                    buraya tıklayıp arayüz şifresini giriniz
-                  </p>
+                  <div className="flex h-20 w-20 items-center justify-center border border-black/50">
+                    <span className="text-[10px] font-bold leading-none tracking-[0.2em] text-black">
+                      PASSWORD
+                    </span>
+                  </div>
                 </div>
               </div>
 
