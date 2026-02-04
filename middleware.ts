@@ -1,19 +1,30 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+
+const AUTH_COOKIE = "cms-auth"
 
 export function middleware(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  
-  // Vercel kasasından çektiğimiz şifreyi kullanıyoruz
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+  const { pathname } = request.nextUrl
+  const isLoginRoute = pathname === "/login"
+  const isNextAsset = pathname.startsWith("/_next")
+  const isPublicFile = /\.[^/]+$/.test(pathname)
 
-  if (authHeader !== `Basic ${btoa(`admin:${ADMIN_PASSWORD}`)}`) {
-    return new NextResponse('Kimlik doğrulaması gerekli.', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Giriş Yapın"',
-      },
-    })
+  if (isNextAsset || isPublicFile) {
+    return NextResponse.next()
+  }
+
+  const isAuthed = request.cookies.get(AUTH_COOKIE)?.value === "1"
+
+  if (isLoginRoute && isAuthed) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/"
+    return NextResponse.redirect(url)
+  }
+
+  if (!isLoginRoute && !isAuthed) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/login"
+    return NextResponse.redirect(url)
   }
 
   return NextResponse.next()
@@ -21,5 +32,5 @@ export function middleware(request: NextRequest) {
 
 // Tüm sayfaları şifre kalkanı altına alıyoruz
 export const config = {
-  matcher: '/:path*',
+  matcher: "/:path*",
 }
