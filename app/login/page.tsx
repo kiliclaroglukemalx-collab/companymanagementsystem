@@ -4,9 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 
-const ADMIN_PASSWORD = "1530Bb_4560"
-const AUTH_COOKIE = "cms-auth"
-
 export default function LoginPage() {
   const router = useRouter()
   const [password, setPassword] = useState("")
@@ -42,23 +39,34 @@ export default function LoginPage() {
     return () => window.clearTimeout(timer)
   }, [error])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (isSubmitting || isSuccess) {
       return
     }
 
-    if (password === ADMIN_PASSWORD) {
-      setError("")
-      setIsSubmitting(true)
+    setIsSubmitting(true)
+    setError("")
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      })
+
+      if (!response.ok) {
+        throw new Error("invalid")
+      }
+
       setIsSuccess(true)
-      document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=604800; samesite=lax`
       window.setTimeout(() => router.push("/"), 500)
       return
+    } catch {
+      setError("Şifre hatalı. Lütfen tekrar deneyin.")
+      setIsShaking(true)
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setError("Şifre hatalı. Lütfen tekrar deneyin.")
-    setIsShaking(true)
   }
 
   return (

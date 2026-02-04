@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { jwtVerify } from "jose"
 
 const AUTH_COOKIE = "cms-auth"
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isLoginRoute = pathname === "/login"
   const isNextAsset = pathname.startsWith("/_next")
@@ -13,7 +14,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const isAuthed = request.cookies.get(AUTH_COOKIE)?.value === "1"
+  const token = request.cookies.get(AUTH_COOKIE)?.value
+  const secret = process.env.AUTH_SECRET
+
+  let isAuthed = false
+  if (token && secret) {
+    try {
+      await jwtVerify(token, new TextEncoder().encode(secret))
+      isAuthed = true
+    } catch {
+      isAuthed = false
+    }
+  }
 
   if (isLoginRoute && isAuthed) {
     const url = request.nextUrl.clone()
