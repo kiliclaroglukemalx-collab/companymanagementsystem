@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 import { SignJWT } from "jose"
 
-const ADMIN_PASSWORD = "1530Bb_4560"
 const AUTH_COOKIE = "cms-auth"
 
 export async function POST(request: Request) {
+  const ADMIN_PASSWORD = "1530Bb_4560"
   const secret = process.env.AUTH_SECRET_KEY
   if (!secret) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
