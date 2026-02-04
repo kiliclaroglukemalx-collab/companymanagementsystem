@@ -57,6 +57,11 @@ export function MicroHeader({ activeTab, onTabChange }: MicroHeaderProps) {
               type: "spring",
               stiffness: 400,
               damping: 15,
+              rotate: {
+                type: "tween",
+                duration: 0.4,
+                ease: "easeInOut",
+              },
             }}
           >
             <Image

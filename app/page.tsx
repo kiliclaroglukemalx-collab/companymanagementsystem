@@ -2,7 +2,7 @@
 
 import { useState, useCallback, Suspense, lazy } from "react"
 import dynamic from "next/dynamic"
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
+import { motion, AnimatePresence, LayoutGroup, cubicBezier } from "framer-motion"
 import { MicroHeader } from "@/components/dashboard/micro-header"
 import { useTheme } from "@/lib/theme-context"
 import { HybridBrandSelector } from "@/components/dashboard/hybrid-brand-selector"
@@ -79,7 +79,7 @@ const pageTransition = {
   initial: { opacity: 0, y: 20, willChange: "opacity, transform" },
   animate: { opacity: 1, y: 0, willChange: "auto" },
   exit: { opacity: 0, y: -20, willChange: "opacity, transform" },
-  transition: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }
+  transition: { duration: 0.4, ease: cubicBezier(0.25, 0.1, 0.25, 1) }
 }
 
 export default function DashboardPage() {

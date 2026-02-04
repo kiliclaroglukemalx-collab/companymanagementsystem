@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -12,8 +12,26 @@ export default function LoginPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasPrefetched, setHasPrefetched] = useState(false)
+  const [showHint, setShowHint] = useState(false)
+  const [shouldShowHint, setShouldShowHint] = useState(false)
+  const [hasTyped, setHasTyped] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
 
   const inputId = useMemo(() => "login-password", [])
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const hintTimerRef = useRef<number | null>(null)
+  const fallbackTimerRef = useRef<number | null>(null)
+  const hasTypedRef = useRef(false)
+  const isFocusedRef = useRef(false)
+  const hasVideoDurationRef = useRef(false)
+
+  useEffect(() => {
+    hasTypedRef.current = hasTyped
+  }, [hasTyped])
+
+  useEffect(() => {
+    isFocusedRef.current = isFocused
+  }, [isFocused])
 
   const handleFocusPrefetch = useCallback(() => {
     if (hasPrefetched) {
@@ -22,6 +40,55 @@ export default function LoginPage() {
     router.prefetch("/dashboard")
     setHasPrefetched(true)
   }, [hasPrefetched, router])
+
+  const showHintNow = useCallback(() => {
+    setShouldShowHint(true)
+    if (!hasTypedRef.current && !isFocusedRef.current) {
+      setShowHint(true)
+    }
+  }, [])
+
+  const scheduleHint = useCallback(
+    (delayMs: number) => {
+      if (hintTimerRef.current) {
+        window.clearTimeout(hintTimerRef.current)
+      }
+      hintTimerRef.current = window.setTimeout(() => {
+        showHintNow()
+      }, delayMs)
+    },
+    [showHintNow]
+  )
+
+  const handleVideoMetadata = useCallback(() => {
+    const video = videoRef.current
+    if (!video) {
+      return
+    }
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+      return
+    }
+    hasVideoDurationRef.current = true
+    const remainingSeconds = Math.max(video.duration - 1 - video.currentTime, 0)
+    scheduleHint(remainingSeconds * 1000)
+  }, [scheduleHint])
+
+  useEffect(() => {
+    fallbackTimerRef.current = window.setTimeout(() => {
+      if (hasVideoDurationRef.current) {
+        return
+      }
+      showHintNow()
+    }, 1000)
+    return () => {
+      if (hintTimerRef.current) {
+        window.clearTimeout(hintTimerRef.current)
+      }
+      if (fallbackTimerRef.current) {
+        window.clearTimeout(fallbackTimerRef.current)
+      }
+    }
+  }, [showHintNow])
 
   useEffect(() => {
     if (!isShaking) {
@@ -76,13 +143,28 @@ export default function LoginPage() {
     }
   }
 
+  const handleInputFocus = useCallback(() => {
+    setIsFocused(true)
+    setShowHint(false)
+    handleFocusPrefetch()
+  }, [handleFocusPrefetch])
+
+  const handleInputBlur = useCallback(() => {
+    setIsFocused(false)
+    if (shouldShowHint && !hasTyped) {
+      setShowHint(true)
+    }
+  }, [hasTyped, shouldShowHint])
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black text-white">
       <video
+        ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         muted
         playsInline
+        onLoadedMetadata={handleVideoMetadata}
       >
         <source src="/login-bg.mp4" type="video/mp4" />
       </video>
@@ -102,7 +184,7 @@ export default function LoginPage() {
               <label htmlFor={inputId} className="sr-only">
                 Şifre
               </label>
-              <div className="relative flex h-12 items-center justify-center">
+              <div className="relative w-full">
                 <input
                   id={inputId}
                   type="password"
@@ -112,13 +194,25 @@ export default function LoginPage() {
                     if (error) {
                       setError("")
                     }
+                    if (!hasTyped && event.target.value.length > 0) {
+                      setHasTyped(true)
+                      setShowHint(false)
+                    }
                   }}
-                  onFocus={handleFocusPrefetch}
-                  placeholder="buraya tıklayıp arayüz şifresini giriniz"
-                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold leading-[3rem] outline-none border-none focus:outline-none placeholder:font-bold placeholder:text-black focus:placeholder:text-transparent focus:placeholder:opacity-0"
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  placeholder=""
+                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold leading-[3rem] outline-none border-none focus:outline-none"
                   autoComplete="current-password"
                   disabled={isSubmitting}
                 />
+                <div
+                  className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${showHint ? "opacity-100" : "opacity-0"}`}
+                >
+                  <p className="m-0 text-center text-sm font-bold leading-none text-black">
+                    buraya tıklayıp arayüz şifresini giriniz
+                  </p>
+                </div>
               </div>
 
               <AnimatePresence mode="wait">
