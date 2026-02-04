@@ -87,7 +87,7 @@ export default function LoginPage() {
               <label htmlFor={inputId} className="sr-only">
                 Şifre
               </label>
-              <div className="flex items-center">
+              <div className="relative flex h-12 items-center justify-center">
                 <input
                   id={inputId}
                   type="password"
@@ -99,11 +99,19 @@ export default function LoginPage() {
                     }
                   }}
                   onFocus={handleFocusPrefetch}
-                  placeholder="buraya tıklayıp arayüz şifresini giriniz"
-                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold outline-none border-none focus:outline-none placeholder:text-black placeholder:font-bold"
+                  placeholder=""
+                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold outline-none border-none focus:outline-none"
                   autoComplete="current-password"
                   disabled={isSubmitting}
                 />
+                <motion.p
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center text-center text-sm font-bold text-black"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 3, duration: 0.8 }}
+                >
+                  buraya tıklayıp arayüz şifresini giriniz
+                </motion.p>
               </div>
 
               <AnimatePresence mode="wait">
