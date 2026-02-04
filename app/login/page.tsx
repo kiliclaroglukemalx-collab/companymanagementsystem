@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -14,8 +14,17 @@ export default function LoginPage() {
   const [isShaking, setIsShaking] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasPrefetched, setHasPrefetched] = useState(false)
 
   const inputId = useMemo(() => "login-password", [])
+
+  const handleFocusPrefetch = useCallback(() => {
+    if (hasPrefetched) {
+      return
+    }
+    router.prefetch("/dashboard")
+    setHasPrefetched(true)
+  }, [hasPrefetched, router])
 
   useEffect(() => {
     if (!isShaking) {
@@ -52,7 +61,7 @@ export default function LoginPage() {
         muted
         playsInline
       >
-        <source src="/login-bg1.mp4" type="video/mp4" />
+        <source src="/login-bg.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-black/35" />
 
@@ -80,13 +89,14 @@ export default function LoginPage() {
                   setError("")
                 }
               }}
+              onFocus={handleFocusPrefetch}
               placeholder="Password"
               className="absolute border border-red-500 bg-transparent text-black"
               style={{
-                top: "46.5%",
+                top: "45.8%",
                 left: "50%",
-                width: "360px",
-                height: "64px",
+                width: "380px",
+                height: "66px",
                 transform: "translate(-50%, -50%)",
               }}
               autoComplete="current-password"
@@ -97,10 +107,10 @@ export default function LoginPage() {
               type="submit"
               className="absolute opacity-0"
               style={{
-                top: "58.5%",
+                top: "59.2%",
                 left: "50%",
-                width: "240px",
-                height: "52px",
+                width: "250px",
+                height: "54px",
                 transform: "translate(-50%, -50%)",
               }}
               disabled={isSubmitting}
