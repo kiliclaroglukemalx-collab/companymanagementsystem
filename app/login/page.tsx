@@ -99,8 +99,8 @@ export default function LoginPage() {
                     }
                   }}
                   onFocus={handleFocusPrefetch}
-                  placeholder="Password"
-                  className="h-12 w-full bg-transparent px-5 py-0 text-black outline-none border-none focus:outline-none"
+                  placeholder="buraya tıklayıp arayüz şifresini giriniz"
+                  className="h-12 w-full bg-transparent px-5 py-0 text-center text-black font-bold outline-none border-none focus:outline-none placeholder:text-black placeholder:font-bold"
                   autoComplete="current-password"
                   disabled={isSubmitting}
                 />
