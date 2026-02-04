@@ -52,7 +52,7 @@ export default function LoginPage() {
         muted
         playsInline
       >
-        <source src="/departments/login-bg.mp4" type="video/mp4" />
+        <source src="/login-bg1.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-black/35" />
 
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 }
               }}
               placeholder="Password"
-              className="absolute opacity-0"
+              className="absolute border border-red-500 bg-transparent text-black"
               style={{
                 top: "46.5%",
                 left: "50%",
