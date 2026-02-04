@@ -76,7 +76,14 @@ export default function LoginPage() {
       setShowHint(false)
       setShouldShowHint(false)
     }
-    const remainingSeconds = Math.max(video.duration - 1 - video.currentTime, 0)
+    const targetTime = Math.max(video.duration - 1, 0)
+    const handleSeeked = () => {
+      video.pause()
+      video.removeEventListener("seeked", handleSeeked)
+    }
+    video.addEventListener("seeked", handleSeeked)
+    video.currentTime = targetTime
+    const remainingSeconds = Math.max(video.duration - 1 - targetTime, 0)
     scheduleHint(remainingSeconds * 1000)
   }, [scheduleHint])
 
@@ -173,7 +180,7 @@ export default function LoginPage() {
         playsInline
         onLoadedMetadata={handleVideoMetadata}
       >
-        <source src="/login-bg.mp4" type="video/mp4" />
+        <source src="/loginy.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-black/35" />
 
