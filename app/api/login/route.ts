@@ -4,16 +4,16 @@ import { SignJWT } from "jose"
 const AUTH_COOKIE = "cms-auth"
 
 export async function POST(request: Request) {
-  const ADMIN_PASSWORD = "1530Bb_4560"
+  const adminPassword = process.env.ADMIN_PASSWORD
   const secret = process.env.AUTH_SECRET_KEY
-  if (!secret) {
+  if (!adminPassword || !secret) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
   }
 
   const body = await request.json().catch(() => null)
   const password = body?.password
 
-  if (password !== ADMIN_PASSWORD) {
+  if (password !== adminPassword) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
   }
 
