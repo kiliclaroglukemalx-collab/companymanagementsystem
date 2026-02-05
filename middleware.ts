@@ -9,24 +9,46 @@ export async function middleware(request: NextRequest) {
   const isLoginRoute = pathname === "/login"
   const isNextAsset = pathname.startsWith("/_next")
   const isPublicFile = /\.[^/]+$/.test(pathname)
-  const isLoginApiRoute = pathname === "/api/login"
+  const isLoginApiRoute = pathname === "/api/auth/login"
+  const isLegacyLoginRoute = pathname === "/api/login"
+  const isFirstPasswordRoute = pathname === "/api/auth/first-password"
+  const isApiRoute = pathname.startsWith("/api")
 
-  if (isNextAsset || isPublicFile || isLoginApiRoute) {
+  if (
+    isNextAsset ||
+    isPublicFile ||
+    isLoginApiRoute ||
+    isLegacyLoginRoute ||
+    isFirstPasswordRoute
+  ) {
     return NextResponse.next()
   }
 
   const token = request.cookies.get(AUTH_COOKIE)?.value
   const secret = process.env.AUTH_SECRET_KEY
+  let authPayload: { siteId: string; role: string; userId?: string; sessionId?: string } | null = null
 
-  let isAuthed = false
   if (token && secret) {
     try {
-      await jwtVerify(token, new TextEncoder().encode(secret))
-      isAuthed = true
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
+      const siteId = payload.siteId
+      const role = payload.role
+      const userId = payload.sub
+      const sessionId = payload.sid
+      if (typeof siteId === "string" && typeof role === "string") {
+        authPayload = {
+          siteId,
+          role,
+          userId: typeof userId === "string" ? userId : undefined,
+          sessionId: typeof sessionId === "string" ? sessionId : undefined,
+        }
+      }
     } catch {
-      isAuthed = false
+      authPayload = null
     }
   }
+
+  const isAuthed = Boolean(authPayload)
 
   if (isLoginRoute && isAuthed) {
     const url = request.nextUrl.clone()
@@ -35,9 +57,25 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isLoginRoute && !isAuthed) {
+    if (isApiRoute) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     return NextResponse.redirect(url)
+  }
+
+  if (authPayload) {
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set("x-site-id", authPayload.siteId)
+    requestHeaders.set("x-user-role", authPayload.role)
+    if (authPayload.userId) {
+      requestHeaders.set("x-user-id", authPayload.userId)
+    }
+    if (authPayload.sessionId) {
+      requestHeaders.set("x-session-id", authPayload.sessionId)
+    }
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   return NextResponse.next()
