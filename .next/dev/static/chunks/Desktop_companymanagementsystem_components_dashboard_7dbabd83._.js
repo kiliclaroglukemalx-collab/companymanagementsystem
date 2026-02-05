@@ -1,0 +1,109 @@
+(globalThis.TURBOPACK || (globalThis.TURBOPACK = [])).push([typeof document === "object" ? document.currentScript : undefined,
+"[project]/Desktop/companymanagementsystem/components/dashboard/neon-expanded-view.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/d8ef6_lodash_8fcdb907._.js",
+  "static/chunks/d8ef6_recharts_es6_1ce2f95c._.js",
+  "static/chunks/d8ef6_3352ae9d._.js",
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_neon-expanded-view_tsx_ad04ea1f._.js",
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_neon-expanded-view_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/neon-expanded-view.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/living-data-footer.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_living-data-footer_tsx_df76f6ff._.js",
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_living-data-footer_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/living-data-footer.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/data-wall-modal.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/Desktop_companymanagementsystem_25ff044c._.js",
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_data-wall-modal_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/data-wall-modal.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/arena-league-system.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_arena-league-system_tsx_a3864394._.js",
+  "static/chunks/d8ef6_lucide-react_dist_esm_icons_9657717c._.js",
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_arena-league-system_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/arena-league-system.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/shift-calendar.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/Desktop_companymanagementsystem_components_dashboard_shift-calendar_tsx_212fcc70._.js",
+  "static/chunks/d8ef6_d0ba0a71._.js",
+  "static/chunks/Desktop_companymanagementsystem_components_dashboard_shift-calendar_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/shift-calendar.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/personnel-center.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_personnel-center_tsx_d870b35e._.js",
+  "static/chunks/d8ef6_lucide-react_dist_esm_icons_00e1bce6._.js",
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_personnel-center_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/personnel-center.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/global-performance-monolith.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/Desktop_companymanagementsystem_d88a5f94._.js",
+  "static/chunks/14560_components_dashboard_global-performance-monolith_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/global-performance-monolith.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/settings-panel.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/Desktop_companymanagementsystem_components_dashboard_settings-panel_tsx_b7bf6495._.js",
+  "static/chunks/d8ef6_lucide-react_dist_esm_icons_b43c6fa4._.js",
+  "static/chunks/Desktop_companymanagementsystem_components_dashboard_settings-panel_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/settings-panel.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+"[project]/Desktop/companymanagementsystem/components/dashboard/announcement-popup.tsx [app-client] (ecmascript, next/dynamic entry, async loader)", ((__turbopack_context__) => {
+
+__turbopack_context__.v((parentImport) => {
+    return Promise.all([
+  "static/chunks/Desktop_companymanagementsystem_components_dashboard_df3a8bc5._.js",
+  "static/chunks/d8ef6_lucide-react_dist_esm_icons_1ffe50c7._.js",
+  "static/chunks/3d860_companymanagementsystem_components_dashboard_announcement-popup_tsx_c0959d56._.js"
+].map((chunk) => __turbopack_context__.l(chunk))).then(() => {
+        return parentImport("[project]/Desktop/companymanagementsystem/components/dashboard/announcement-popup.tsx [app-client] (ecmascript, next/dynamic entry)");
+    });
+});
+}),
+]);
