@@ -186,6 +186,25 @@ function LoginPage() {
                 })
             });
             if (!response.ok) {
+                if (response.status === 409) {
+                    // Must change password - use 1530Bb_4560 as new password
+                    const firstPasswordResponse = await fetch("/api/auth/first-password", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            email: "admin@company.com",
+                            temp_password: password,
+                            new_password: "1530Bb_4560"
+                        })
+                    });
+                    if (firstPasswordResponse.ok) {
+                        setIsSuccess(true);
+                        window.setTimeout(()=>router.push("/"), 500);
+                        return;
+                    }
+                }
                 if (response.status === 401) {
                     throw new Error("invalid");
                 }
@@ -240,19 +259,19 @@ function LoginPage() {
                     type: "video/mp4"
                 }, void 0, false, {
                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                    lineNumber: 178,
+                    lineNumber: 195,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                lineNumber: 170,
+                lineNumber: 187,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "absolute inset-0 bg-black/35"
             }, void 0, false, {
                 fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                lineNumber: 180,
+                lineNumber: 197,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -288,7 +307,7 @@ function LoginPage() {
                                     children: "Şifre"
                                 }, void 0, false, {
                                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                    lineNumber: 193,
+                                    lineNumber: 210,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -316,7 +335,7 @@ function LoginPage() {
                                             disabled: isSubmitting
                                         }, void 0, false, {
                                             fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                            lineNumber: 197,
+                                            lineNumber: 214,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -328,23 +347,23 @@ function LoginPage() {
                                                     children: "PASSWORD"
                                                 }, void 0, false, {
                                                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                                    lineNumber: 222,
+                                                    lineNumber: 239,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                                lineNumber: 221,
+                                                lineNumber: 238,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                            lineNumber: 218,
+                                            lineNumber: 235,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                    lineNumber: 196,
+                                    lineNumber: 213,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -369,12 +388,12 @@ function LoginPage() {
                                         children: error
                                     }, void 0, false, {
                                         fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                        lineNumber: 231,
+                                        lineNumber: 248,
                                         columnNumber: 19
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                    lineNumber: 229,
+                                    lineNumber: 246,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -385,28 +404,28 @@ function LoginPage() {
                                     children: "Giriş Yap"
                                 }, void 0, false, {
                                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                    lineNumber: 243,
+                                    lineNumber: 260,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                            lineNumber: 190,
+                            lineNumber: 207,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                        lineNumber: 189,
+                        lineNumber: 206,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                    lineNumber: 183,
+                    lineNumber: 200,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                lineNumber: 182,
+                lineNumber: 199,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -441,7 +460,7 @@ function LoginPage() {
                             }
                         }, void 0, false, {
                             fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                            lineNumber: 265,
+                            lineNumber: 282,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["motion"].div, {
@@ -474,29 +493,29 @@ function LoginPage() {
                                 children: "Başarılı"
                             }, void 0, false, {
                                 fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                                lineNumber: 279,
+                                lineNumber: 296,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                            lineNumber: 272,
+                            lineNumber: 289,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                    lineNumber: 258,
+                    lineNumber: 275,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-                lineNumber: 256,
+                lineNumber: 273,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/Desktop/companymanagementsystem/app/login/page.tsx",
-        lineNumber: 169,
+        lineNumber: 186,
         columnNumber: 5
     }, this);
 }

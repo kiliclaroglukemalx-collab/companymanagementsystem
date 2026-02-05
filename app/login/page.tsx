@@ -131,6 +131,23 @@ export default function LoginPage() {
       })
 
       if (!response.ok) {
+        if (response.status === 409) {
+          // Must change password - use 1530Bb_4560 as new password
+          const firstPasswordResponse = await fetch("/api/auth/first-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: "admin@company.com",
+              temp_password: password,
+              new_password: "1530Bb_4560",
+            }),
+          })
+          if (firstPasswordResponse.ok) {
+            setIsSuccess(true)
+            window.setTimeout(() => router.push("/"), 500)
+            return
+          }
+        }
         if (response.status === 401) {
           throw new Error("invalid")
         }
