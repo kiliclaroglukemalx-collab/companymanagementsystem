@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { basePrisma } from "@/lib/prisma"
 import { AuthError, requireAuth } from "@/lib/auth"
-import { logSecurityEvent } from "@/lib/security-events"
+import { logSecurityEvent } from "@/lib/log-security-event"
 
 export async function DELETE(request: Request) {
   let auth

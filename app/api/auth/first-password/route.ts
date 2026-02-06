@@ -6,7 +6,7 @@ import { basePrisma } from "@/lib/prisma"
 import { getRequestIp, hashDeviceFingerprint } from "@/lib/auth"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { createSessionResponse } from "@/lib/session"
-import { logSecurityEvent } from "@/lib/security-events"
+import { logSecurityEvent } from "@/lib/log-security-event"
 
 const firstPasswordSchema = z.object({
   email: z.string().email(),

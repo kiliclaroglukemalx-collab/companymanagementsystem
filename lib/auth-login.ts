@@ -5,7 +5,7 @@ import { basePrisma } from "@/lib/prisma"
 import { getRequestIp, hashDeviceFingerprint } from "@/lib/auth"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { isTrustedIp } from "@/lib/trusted-ip"
-import { logSecurityEvent } from "@/lib/security-events"
+import { logSecurityEvent } from "@/lib/log-security-event"
 import { createSessionResponse } from "@/lib/session"
 
 export async function handlePasswordLogin(params: {

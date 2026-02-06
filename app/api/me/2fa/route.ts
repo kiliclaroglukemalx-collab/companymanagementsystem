@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { basePrisma } from "@/lib/prisma"
 import { AuthError, requireAuth } from "@/lib/auth"
-import { logSecurityEvent } from "@/lib/security-events"
+import { logSecurityEvent } from "@/lib/log-security-event"
 
 const schema = z.object({
   enabled: z.boolean(),

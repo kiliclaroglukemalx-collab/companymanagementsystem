@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 
 import { basePrisma, getSiteScopedPrisma } from "@/lib/prisma"
 import { AuthError, requireAuth } from "@/lib/auth"
-import { logSecurityEvent } from "@/lib/security-events"
+import { logSecurityEvent } from "@/lib/log-security-event"
 
 const changePasswordSchema = z.object({
   current_password: z.string().min(1),
