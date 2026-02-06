@@ -20,6 +20,7 @@ model Site {
   departments    Department[]
   securityEvents SecurityEvent[]
   trustedIps     TrustedIp[]
+  arenaEvents    ArenaEvent[]
   createdAt      DateTime        @default(now())
 }
 
@@ -137,4 +138,29 @@ model RatingCriteria {
 
   @@unique([departmentId, name])
   @@index([departmentId])
+}
+
+// Arena Live Feed Events
+enum ArenaEventType {
+  RATING_GIVEN
+  LEADER_CHANGED
+  RATING_PROGRESS
+  SECURITY_ALERT
+  USER_CREATED
+  USER_JOINED
+}
+
+model ArenaEvent {
+  id        String         @id @default(cuid())
+  siteId    String
+  type      ArenaEventType
+  title     String
+  message   String?
+  metaJson  Json?
+  createdAt DateTime       @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([type])
 }

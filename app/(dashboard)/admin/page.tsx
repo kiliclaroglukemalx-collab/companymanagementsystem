@@ -2,6 +2,7 @@ import { getServerAuthContext } from "@/lib/server-auth"
 import { basePrisma } from "@/lib/prisma"
 import { Building2, Users, Layout, BarChart3 } from "lucide-react"
 import Link from "next/link"
+import { TR } from "@/lib/tr-constants"
 
 export default async function AdminDashboard() {
   const auth = await getServerAuthContext()
@@ -17,10 +18,10 @@ export default async function AdminDashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">
-          Master Panel Dashboard
+          {TR.admin.title}
         </h1>
         <p className="mt-2 text-slate-600">
-          Organization & User Management System
+          {TR.admin.subtitle}
         </p>
       </div>
       
@@ -28,7 +29,7 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {auth.role === "SUPER_ADMIN" && (
           <StatCard
-            title="Total Sites"
+            title={TR.admin.totalSites}
             value={stats.sitesCount}
             icon={Building2}
             href="/admin/sites"
@@ -38,7 +39,7 @@ export default async function AdminDashboard() {
         
         {auth.role === "SUPER_ADMIN" && (
           <StatCard
-            title="Departments"
+            title={TR.admin.departments}
             value={stats.departmentsCount}
             icon={Layout}
             href="/admin/departments"
@@ -47,7 +48,7 @@ export default async function AdminDashboard() {
         )}
         
         <StatCard
-          title="Total Users"
+          title={TR.admin.totalUsers}
           value={stats.usersCount}
           icon={Users}
           href="/admin/users"
@@ -56,7 +57,7 @@ export default async function AdminDashboard() {
         
         {auth.role === "SUPER_ADMIN" && (
           <StatCard
-            title="Rating Criteria"
+            title={TR.admin.ratingCriteria}
             value={stats.criteriaCount}
             icon={BarChart3}
             href="/admin/criteria"
@@ -68,35 +69,35 @@ export default async function AdminDashboard() {
       {/* Quick Actions */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Quick Actions
+          {TR.admin.quickActions}
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {auth.role === "SUPER_ADMIN" && (
             <>
               <QuickActionCard
-                title="Create Site"
-                description="Add a new site to the system"
+                title={TR.admin.createSite}
+                description={TR.admin.createSiteDesc}
                 href="/admin/sites"
               />
               <QuickActionCard
-                title="Create Department"
-                description="Add a new department to a site"
+                title={TR.admin.createDepartment}
+                description={TR.admin.createDepartmentDesc}
                 href="/admin/departments"
               />
             </>
           )}
           
           <QuickActionCard
-            title="Add User"
-            description="Create a new user account"
+            title={TR.admin.addUser}
+            description={TR.admin.addUserDesc}
             href="/admin/users"
           />
           
           {auth.role === "SUPER_ADMIN" && (
             <QuickActionCard
-              title="Define Criteria"
-              description="Set up rating criteria for departments"
+              title={TR.admin.defineCriteria}
+              description={TR.admin.defineCriteriaDesc}
               href="/admin/criteria"
             />
           )}
@@ -106,22 +107,22 @@ export default async function AdminDashboard() {
       {/* Role Info */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-2">
-          Your Access Level: {auth.role.replace("_", " ")}
+          {TR.admin.yourAccessLevel}: {TR.roles[auth.role as keyof typeof TR.roles]}
         </h3>
         <div className="text-sm text-slate-600 space-y-1">
           {auth.role === "SUPER_ADMIN" ? (
             <>
-              <p>✓ Full system access</p>
-              <p>✓ Manage all sites and departments</p>
-              <p>✓ Create and manage all users</p>
-              <p>✓ Configure rating criteria</p>
+              <p>✓ {TR.admin.fullSystemAccess}</p>
+              <p>✓ {TR.admin.manageAllSites}</p>
+              <p>✓ {TR.admin.manageAllUsers}</p>
+              <p>✓ {TR.admin.configureCriteria}</p>
             </>
           ) : (
             <>
-              <p>✓ Access to your site only</p>
-              <p>✓ Manage users in your site</p>
-              <p>✓ Assign roles (MANAGER, STAFF)</p>
-              <p>✗ Cannot create sites or departments</p>
+              <p>✓ {TR.admin.accessYourSite}</p>
+              <p>✓ {TR.admin.manageYourSiteUsers}</p>
+              <p>✓ {TR.admin.assignRoles}</p>
+              <p>✗ {TR.admin.cannotCreateSites}</p>
             </>
           )}
         </div>

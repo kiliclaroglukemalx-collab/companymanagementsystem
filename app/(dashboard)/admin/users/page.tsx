@@ -5,6 +5,7 @@ import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { TR } from "@/lib/tr-constants"
 
 interface SearchParams {
   search?: string
@@ -31,9 +32,9 @@ export default async function UsersPage({
       <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
         <AlertCircle className="w-5 h-5 flex-shrink-0" />
         <div>
-          <div className="font-semibold">Access Denied</div>
+          <div className="font-semibold">{TR.errors.accessDenied}</div>
           <div className="text-sm">
-            You do not have permission to access user management.
+            {TR.errors.userManagementDenied}
           </div>
         </div>
       </div>
