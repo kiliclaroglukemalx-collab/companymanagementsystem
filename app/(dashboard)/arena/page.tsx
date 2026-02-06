@@ -1,6 +1,6 @@
 import { getServerAuthContext } from "@/lib/server-auth"
-import { listArenaEvents } from "@/lib/arena-actions"
-import { ArenaLiveFeed } from "@/components/arena/arena-live-feed"
+import { listArenaEvents, getArenaSummary } from "@/lib/arena-actions"
+import { ArenaLiveFeedEnhanced } from "@/components/arena/arena-live-feed-enhanced"
 import { Trophy, AlertCircle } from "lucide-react"
 import { redirect } from "next/navigation"
 import { TR } from "@/lib/tr-constants"
@@ -13,8 +13,11 @@ export default async function ArenaPage() {
     redirect("/login")
   }
   
-  // Fetch arena events
-  const eventsResult = await listArenaEvents({ limit: 20 })
+  // Fetch arena events and summary
+  const [eventsResult, summaryResult] = await Promise.all([
+    listArenaEvents({ limit: 20, timeRange: "today" }),
+    getArenaSummary(),
+  ])
   
   if (!eventsResult.success) {
     return (
@@ -96,11 +99,12 @@ export default async function ArenaPage() {
           </div>
         </div>
         
-        {/* Live Feed */}
+        {/* Live Feed with Enhanced Features */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <ArenaLiveFeed 
-              events={eventsResult.data.events} 
+            <ArenaLiveFeedEnhanced 
+              events={eventsResult.data.events}
+              summary={summaryResult.success ? summaryResult.data : undefined}
               isLoading={false}
             />
           </div>
