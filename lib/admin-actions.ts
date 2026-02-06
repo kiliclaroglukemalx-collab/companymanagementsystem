@@ -16,6 +16,7 @@ import {
 import { UserRole } from "@/lib/auth"
 import bcrypt from "bcrypt"
 import crypto from "crypto"
+import { z } from "zod"
 
 // ============================================
 // TYPES
@@ -831,5 +832,388 @@ export async function terminateSession(
       return { success: false, error: error.message }
     }
     return { success: false, error: "Failed to terminate session" }
+  }
+}
+
+// ============================================
+// SECURITY EVENTS MANAGEMENT (Role-based access)
+// ============================================
+
+// Validation schemas
+const listSecurityEventsSchema = z.object({
+  siteId: z.string().optional(),
+  type: z.string().optional(),
+  resolved: z.enum(["all", "open", "resolved"]).optional(),
+  timeRange: z.enum(["24h", "7d", "30d", "all"]).optional(),
+  search: z.string().optional(),
+  page: z.number().int().positive().optional(),
+  limit: z.number().int().positive().max(100).optional(),
+})
+
+const resolveSecurityEventSchema = z.object({
+  eventId: z.string().min(1),
+  resolution: z.string().optional(),
+})
+
+const bulkResolveSecurityEventsSchema = z.object({
+  eventIds: z.array(z.string().min(1)).min(1).max(100),
+})
+
+export async function listSecurityEvents(filters?: {
+  siteId?: string
+  type?: string
+  resolved?: "all" | "open" | "resolved"
+  timeRange?: "24h" | "7d" | "30d" | "all"
+  search?: string
+  page?: number
+  limit?: number
+}): Promise<ActionResult<{ events: any[]; total: number; page: number; totalPages: number }>> {
+  try {
+    // Validate input
+    const validated = listSecurityEventsSchema.parse(filters || {})
+    
+    const auth = await requireAdminOrAbove()
+    
+    const page = validated.page || 1
+    const limit = validated.limit || 50
+    const skip = (page - 1) * limit
+    
+    // SUPER_ADMIN can see all events
+    // ADMIN can only see events from their site
+    const whereClause: any = {}
+    
+    if (auth.role === "ADMIN") {
+      whereClause.siteId = auth.siteId
+    } else if (validated.siteId) {
+      whereClause.siteId = validated.siteId
+    }
+    
+    if (validated.type) {
+      whereClause.type = validated.type
+    }
+    
+    // Resolved filter
+    if (validated.resolved === "open") {
+      whereClause.resolvedAt = null
+    } else if (validated.resolved === "resolved") {
+      whereClause.resolvedAt = { not: null }
+    }
+    
+    // Time range filter
+    if (validated.timeRange && validated.timeRange !== "all") {
+      const now = new Date()
+      let startDate: Date
+      
+      switch (validated.timeRange) {
+        case "24h":
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+          break
+        case "7d":
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          break
+        case "30d":
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+          break
+        default:
+          startDate = new Date(0)
+      }
+      
+      whereClause.createdAt = { gte: startDate }
+    }
+    
+    // Search functionality (user email/name + IP from metaJson)
+    if (validated.search && validated.search.trim()) {
+      const searchTerm = validated.search.trim()
+      
+      whereClause.OR = [
+        // Search in user name
+        { user: { name: { contains: searchTerm, mode: "insensitive" } } },
+        // Search in user email
+        { user: { email: { contains: searchTerm, mode: "insensitive" } } },
+        // Search in IP (from metaJson)
+        { metaJson: { path: ["ip"], string_contains: searchTerm } },
+      ]
+    }
+    
+    const [events, total] = await Promise.all([
+      basePrisma.securityEvent.findMany({
+        where: whereClause,
+        include: {
+          site: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      basePrisma.securityEvent.count({ where: whereClause }),
+    ])
+    
+    return { 
+      success: true, 
+      data: { 
+        events, 
+        total, 
+        page, 
+        totalPages: Math.ceil(total / limit) 
+      } 
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: "Invalid filter parameters" }
+    }
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to load security events" }
+  }
+}
+
+export async function getSecurityEvent(eventId: string): Promise<ActionResult<any>> {
+  try {
+    // Validate input
+    const validated = z.string().min(1).parse(eventId)
+    
+    const auth = await requireAdminOrAbove()
+    
+    // Get the event
+    const event = await basePrisma.securityEvent.findUnique({
+      where: { id: validated },
+      include: {
+        site: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    })
+    
+    if (!event) {
+      return { success: false, error: "Security event not found" }
+    }
+    
+    // Check site access
+    assertSiteAccess(auth, event.siteId)
+    
+    // Get resolver info if resolved
+    let resolverInfo = null
+    if (event.resolvedBy) {
+      resolverInfo = await basePrisma.user.findUnique({
+        where: { id: event.resolvedBy },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      })
+    }
+    
+    return { 
+      success: true, 
+      data: {
+        ...event,
+        resolver: resolverInfo,
+      }
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: "Invalid event ID" }
+    }
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to load security event" }
+  }
+}
+
+export async function resolveSecurityEvent(
+  eventId: string,
+  resolution?: string
+): Promise<ActionResult<any>> {
+  try {
+    // Validate input
+    const validated = resolveSecurityEventSchema.parse({ eventId, resolution })
+    
+    const auth = await requireAdminOrAbove()
+    
+    // Get the event to check access
+    const event = await basePrisma.securityEvent.findUnique({
+      where: { id: validated.eventId },
+    })
+    
+    if (!event) {
+      return { success: false, error: "Security event not found" }
+    }
+    
+    // Check site access
+    assertSiteAccess(auth, event.siteId)
+    
+    // Check if already resolved
+    if (event.resolvedAt) {
+      return { success: false, error: "Event already resolved" }
+    }
+    
+    // Update the event
+    const updatedEvent = await basePrisma.securityEvent.update({
+      where: { id: validated.eventId },
+      data: { 
+        resolvedAt: new Date(),
+        resolvedBy: auth.userId,
+        metaJson: {
+          ...(event.metaJson as object),
+          resolution: validated.resolution || "Resolved by admin",
+        },
+      },
+      include: {
+        site: true,
+        user: true,
+      },
+    })
+    
+    revalidatePath("/admin/security-events")
+    revalidatePath(`/admin/security-events/${validated.eventId}`)
+    return { success: true, data: updatedEvent }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: "Invalid input" }
+    }
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to resolve security event" }
+  }
+}
+
+export async function bulkResolveSecurityEvents(
+  eventIds: string[]
+): Promise<ActionResult<{ count: number }>> {
+  try {
+    // Validate input
+    const validated = bulkResolveSecurityEventsSchema.parse({ eventIds })
+    
+    const auth = await requireAdminOrAbove()
+    
+    // Get all events to check access
+    const events = await basePrisma.securityEvent.findMany({
+      where: { 
+        id: { in: validated.eventIds },
+        resolvedAt: null, // Only resolve unresolved events
+      },
+      select: { id: true, siteId: true },
+    })
+    
+    if (events.length === 0) {
+      return { success: false, error: "No unresolved events found" }
+    }
+    
+    // Check site access for each event
+    if (auth.role === "ADMIN") {
+      const unauthorizedEvent = events.find(e => e.siteId !== auth.siteId)
+      if (unauthorizedEvent) {
+        return { success: false, error: "Site access denied for one or more events" }
+      }
+    }
+    
+    // Update all events
+    const result = await basePrisma.securityEvent.updateMany({
+      where: { 
+        id: { in: events.map(e => e.id) },
+      },
+      data: { 
+        resolvedAt: new Date(),
+        resolvedBy: auth.userId,
+      },
+    })
+    
+    revalidatePath("/admin/security-events")
+    return { success: true, data: { count: result.count } }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: "Invalid event IDs" }
+    }
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to resolve security events" }
+  }
+}
+
+export async function getSecurityEventStats(): Promise<ActionResult<{
+  total: number
+  unresolved: number
+  bySeverity: Record<string, number>
+  byCategory: Record<string, number>
+  recentCount: number
+}>> {
+  try {
+    const auth = await requireAdminOrAbove()
+    
+    // Build where clause for site isolation
+    const whereClause: any = {}
+    if (auth.role === "ADMIN") {
+      whereClause.siteId = auth.siteId
+    }
+    
+    const [total, unresolved, recentCount] = await Promise.all([
+      basePrisma.securityEvent.count({ where: whereClause }),
+      basePrisma.securityEvent.count({ 
+        where: { ...whereClause, resolvedAt: null } 
+      }),
+      basePrisma.securityEvent.count({
+        where: {
+          ...whereClause,
+          createdAt: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+          },
+        },
+      }),
+    ])
+    
+    // Get all events to calculate severity and category stats
+    const allEvents = await basePrisma.securityEvent.findMany({
+      where: whereClause,
+      select: { type: true },
+    })
+    
+    // Import security event metadata
+    const { getEventMetadata } = await import("@/lib/security-events")
+    
+    const bySeverity: Record<string, number> = {}
+    const byCategory: Record<string, number> = {}
+    
+    for (const event of allEvents) {
+      const metadata = getEventMetadata(event.type)
+      
+      bySeverity[metadata.severity] = (bySeverity[metadata.severity] || 0) + 1
+      byCategory[metadata.category] = (byCategory[metadata.category] || 0) + 1
+    }
+    
+    return {
+      success: true,
+      data: {
+        total,
+        unresolved,
+        bySeverity,
+        byCategory,
+        recentCount,
+      },
+    }
+  } catch (error) {
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to load security event statistics" }
   }
 }

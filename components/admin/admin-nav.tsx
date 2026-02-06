@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { AuthContext } from "@/lib/auth"
-import { Building2, Users, Layout, BarChart3, Home, Monitor } from "lucide-react"
+import { Building2, Users, Layout, BarChart3, Home, Monitor, Shield } from "lucide-react"
 
 const navItems = [
   {
@@ -35,6 +35,12 @@ const navItems = [
     href: "/admin/sessions",
     label: "Sessions",
     icon: Monitor,
+    roles: ["SUPER_ADMIN", "ADMIN"],
+  },
+  {
+    href: "/admin/security-events",
+    label: "Security Events",
+    icon: Shield,
     roles: ["SUPER_ADMIN", "ADMIN"],
   },
   {
