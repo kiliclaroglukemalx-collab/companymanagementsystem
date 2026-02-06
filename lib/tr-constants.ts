@@ -279,6 +279,9 @@ export const TR = {
     ratedPeople: "kişiyi puanladı",
     multipleRatings: "birden fazla puanlama yaptı",
     completionMilestone: "tamamlama noktasına ulaştı",
+    todayEvents: "Bugün Toplam Event",
+    todayRatings: "Bugün Puanlama",
+    todaySecurityAlerts: "Bugün Güvenlik Uyarıları",
   },
 
   // Errors

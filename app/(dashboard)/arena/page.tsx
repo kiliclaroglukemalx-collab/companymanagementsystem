@@ -1,7 +1,7 @@
 import { getServerAuthContext } from "@/lib/server-auth"
 import { listArenaEvents, getArenaSummary } from "@/lib/arena-actions"
 import { ArenaLiveFeedEnhanced } from "@/components/arena/arena-live-feed-enhanced"
-import { Trophy, AlertCircle } from "lucide-react"
+import { Trophy, AlertCircle, Activity, Star, TrendingUp, Shield } from "lucide-react"
 import { redirect } from "next/navigation"
 import { TR } from "@/lib/tr-constants"
 
@@ -82,6 +82,77 @@ export default async function ArenaPage() {
       
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* Summary Stats Bar - Bugün Bazında */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Bugün Toplam Event */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
+                <Activity className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-slate-600 mb-1">
+                  {TR.arena.todayEvents || "Bugün Toplam Event"}
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {eventsResult.data.events.length}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bugün Puanlama Sayısı */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0">
+                <Star className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-slate-600 mb-1">
+                  {TR.arena.todayRatings || "Bugün Puanlama"}
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {summaryResult.success ? summaryResult.data?.todayRatingsCount || 0 : 0}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Günlük İlerleme */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-slate-600 mb-1">
+                  {TR.arena.dailyProgress}
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  %{summaryResult.success ? summaryResult.data?.dailyCompletionRate || 0 : 0}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Security Alerts */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-slate-600 mb-1">
+                  {TR.arena.todaySecurityAlerts || "Bugün Güvenlik Uyarıları"}
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {eventsResult.data.events.filter((e) => e.type === "SECURITY_ALERT").length}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         {/* Phase 1 Notice */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
