@@ -241,6 +241,41 @@ export async function deleteDepartment(id: string): Promise<ActionResult<void>> 
   }
 }
 
+export async function listDepartmentsForCurrentAdmin(): Promise<ActionResult<any[]>> {
+  try {
+    const auth = await requireAdminOrAbove()
+    
+    // SUPER_ADMIN can see all departments
+    // ADMIN can only see departments from their site
+    const whereClause: any = {}
+    
+    if (auth.role === "ADMIN") {
+      whereClause.siteId = auth.siteId
+    }
+    
+    const departments = await basePrisma.department.findMany({
+      where: whereClause,
+      include: {
+        site: true,
+        _count: {
+          select: {
+            users: true,
+            ratingCriteria: true,
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    })
+    
+    return { success: true, data: departments }
+  } catch (error) {
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to load departments" }
+  }
+}
+
 // ============================================
 // USER MANAGEMENT (Role-based access)
 // ============================================
@@ -249,9 +284,17 @@ export async function listUsers(filters?: {
   siteId?: string
   departmentId?: string
   role?: UserRole
-}): Promise<ActionResult<any[]>> {
+  status?: "active" | "inactive" | "all"
+  search?: string
+  page?: number
+  limit?: number
+}): Promise<ActionResult<{ users: any[]; total: number; page: number; totalPages: number }>> {
   try {
     const auth = await requireAdminOrAbove()
+    
+    const page = filters?.page || 1
+    const limit = filters?.limit || 50
+    const skip = (page - 1) * limit
     
     // SUPER_ADMIN can see all users
     // ADMIN can only see users from their site
@@ -271,8 +314,63 @@ export async function listUsers(filters?: {
       whereClause.role = filters.role
     }
     
-    const users = await basePrisma.user.findMany({
-      where: whereClause,
+    if (filters?.status === "active") {
+      whereClause.isActive = true
+    } else if (filters?.status === "inactive") {
+      whereClause.isActive = false
+    }
+    
+    if (filters?.search) {
+      whereClause.OR = [
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: filters.search, mode: "insensitive" } },
+      ]
+    }
+    
+    const [users, total] = await Promise.all([
+      basePrisma.user.findMany({
+        where: whereClause,
+        include: {
+          site: true,
+          department: true,
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      basePrisma.user.count({ where: whereClause }),
+    ])
+    
+    return { 
+      success: true, 
+      data: { 
+        users, 
+        total, 
+        page, 
+        totalPages: Math.ceil(total / limit) 
+      } 
+    }
+  } catch (error) {
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to load users" }
+  }
+}
+
+export async function getUser(id: string): Promise<ActionResult<any>> {
+  try {
+    const auth = await requireAdminOrAbove()
+    
+    const user = await basePrisma.user.findUnique({
+      where: { id },
       include: {
         site: true,
         department: true,
@@ -284,15 +382,21 @@ export async function listUsers(filters?: {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
     })
     
-    return { success: true, data: users }
+    if (!user) {
+      return { success: false, error: "User not found" }
+    }
+    
+    // Check site access
+    assertSiteAccess(auth, user.siteId)
+    
+    return { success: true, data: user }
   } catch (error) {
     if (error instanceof ServerAuthError) {
       return { success: false, error: error.message }
     }
-    return { success: false, error: "Failed to load users" }
+    return { success: false, error: "Failed to load user" }
   }
 }
 
@@ -302,6 +406,7 @@ export async function createUser(data: {
   role: UserRole
   name: string
   email: string
+  isActive?: boolean
 }): Promise<ActionResult<{ user: any; tempPassword: string }>> {
   try {
     const auth = await requireAdminOrAbove()
@@ -353,7 +458,7 @@ export async function createUser(data: {
         role: data.role,
         name: data.name.trim(),
         email: data.email.trim(),
-        isActive: true,
+        isActive: data.isActive !== undefined ? data.isActive : true,
         mustChangePassword: true,
         createdByUserId: auth.userId,
         passwordCredential: {
@@ -620,5 +725,111 @@ export async function deleteRatingCriteria(id: string): Promise<ActionResult<voi
       return { success: false, error: error.message }
     }
     return { success: false, error: "Failed to delete criteria" }
+  }
+}
+
+// ============================================
+// SESSION MANAGEMENT (Role-based access)
+// ============================================
+
+export async function listSessions(): Promise<ActionResult<any[]>> {
+  try {
+    const auth = await requireAdminOrAbove()
+    
+    // Build where clause based on role
+    const whereClause: any = {
+      revokedAt: null, // Only show active sessions
+    }
+    
+    if (auth.role === "ADMIN") {
+      // ADMIN can only see sessions from their site
+      whereClause.user = {
+        siteId: auth.siteId,
+      }
+    }
+    // SUPER_ADMIN can see all sessions (no additional filter)
+    
+    const sessions = await basePrisma.session.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          include: {
+            site: true,
+            department: true,
+          },
+        },
+      },
+      orderBy: { lastSeenAt: "desc" },
+    })
+    
+    return { success: true, data: sessions }
+  } catch (error) {
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to load sessions" }
+  }
+}
+
+export async function terminateOtherSessions(
+  currentSessionId: string
+): Promise<ActionResult<{ count: number }>> {
+  try {
+    const auth = await requireAdminOrAbove()
+    
+    // Get current user's sessions
+    const result = await basePrisma.session.updateMany({
+      where: {
+        userId: auth.userId,
+        id: { not: currentSessionId },
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    })
+    
+    revalidatePath("/admin/sessions")
+    return { success: true, data: { count: result.count } }
+  } catch (error) {
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to terminate sessions" }
+  }
+}
+
+export async function terminateSession(
+  sessionId: string
+): Promise<ActionResult<void>> {
+  try {
+    const auth = await requireAdminOrAbove()
+    
+    // Get the session to check access
+    const session = await basePrisma.session.findUnique({
+      where: { id: sessionId },
+      include: { user: true },
+    })
+    
+    if (!session) {
+      return { success: false, error: "Session not found" }
+    }
+    
+    // Check site access
+    assertSiteAccess(auth, session.user.siteId)
+    
+    // Revoke the session
+    await basePrisma.session.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    })
+    
+    revalidatePath("/admin/sessions")
+    return { success: true, data: undefined }
+  } catch (error) {
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to terminate session" }
   }
 }
