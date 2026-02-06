@@ -13,6 +13,42 @@ export default async function ArenaPage() {
     redirect("/login")
   }
   
+  // Fetch full user data for debug
+  const { basePrisma } = await import("@/lib/prisma")
+  const currentUser = await basePrisma.user.findUnique({
+    where: { id: auth.userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      siteId: true,
+      departmentId: true,
+      isActive: true,
+      mustChangePassword: true,
+      department: {
+        select: { name: true }
+      },
+      site: {
+        select: { name: true }
+      }
+    }
+  })
+  
+  // Console log for server-side debugging
+  console.log('🔍 [Arena Debug] Current User:', {
+    email: currentUser?.email,
+    name: currentUser?.name,
+    role: currentUser?.role,
+    siteId: currentUser?.siteId,
+    siteName: currentUser?.site?.name,
+    departmentId: currentUser?.departmentId,
+    departmentName: currentUser?.department?.name,
+    isActive: currentUser?.isActive,
+    mustChangePassword: currentUser?.mustChangePassword,
+    userId: currentUser?.id,
+  })
+  
   // Fetch arena events and summary
   const [eventsResult, summaryResult] = await Promise.all([
     listArenaEvents({ limit: 20, timeRange: "today" }),
@@ -82,6 +118,54 @@ export default async function ArenaPage() {
       
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* Debug Panel - Only in Development/Preview */}
+        {process.env.NODE_ENV !== 'production' && currentUser && (
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🔍</span>
+              <h3 className="text-sm font-bold text-yellow-900">DEBUG: Ben Kimim? (Sadece Dev/Preview)</h3>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span className="font-semibold text-yellow-900">Email:</span>
+                <div className="text-yellow-800">{currentUser.email}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">Name:</span>
+                <div className="text-yellow-800">{currentUser.name}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">Role:</span>
+                <div className="text-yellow-800 font-bold">{currentUser.role}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">Site:</span>
+                <div className="text-yellow-800">{currentUser.site?.name || '-'}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">Department:</span>
+                <div className="text-yellow-800">{currentUser.department?.name || '-'}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">Active:</span>
+                <div className="text-yellow-800">{currentUser.isActive ? '✅ Yes' : '❌ No'}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">Must Change Password:</span>
+                <div className="text-yellow-800">{currentUser.mustChangePassword ? '⚠️ Yes' : '✅ No'}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">User ID:</span>
+                <div className="text-yellow-800 font-mono text-[10px]">{currentUser.id}</div>
+              </div>
+              <div>
+                <span className="font-semibold text-yellow-900">Site ID:</span>
+                <div className="text-yellow-800 font-mono text-[10px]">{currentUser.siteId}</div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Summary Stats Bar - Bugün Bazında */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Bugün Toplam Event */}
