@@ -2,15 +2,13 @@ import { getServerAuthContext } from "@/lib/server-auth"
 import { listArenaEvents, getArenaSummary } from "@/lib/arena-actions"
 import { ArenaLiveFeedEnhanced } from "@/components/arena/arena-live-feed-enhanced"
 import { Trophy, AlertCircle, Activity, Star, TrendingUp, Shield } from "lucide-react"
-import { redirect } from "next/navigation"
 import { TR } from "@/lib/tr-constants"
 
 export default async function ArenaPage() {
   const auth = await getServerAuthContext()
   
-  // Require authentication
   if (!auth) {
-    redirect("/login")
+    return null // Layout will handle redirect
   }
   
   // Fetch full user data for debug

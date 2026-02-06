@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
 
   if (isLoginRoute && isAuthed) {
     const url = request.nextUrl.clone()
-    url.pathname = "/"
+    url.pathname = "/arena"
     return NextResponse.redirect(url)
   }
 

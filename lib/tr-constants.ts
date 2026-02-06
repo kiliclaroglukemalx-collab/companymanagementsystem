@@ -39,6 +39,33 @@ export const TR = {
     import: "İçe Aktar",
   },
 
+  // Auth / Login
+  auth: {
+    login: "Giriş Yap",
+    loginTitle: "Hoş Geldiniz",
+    loginSubtitle: "Devam etmek için giriş yapın",
+    email: "E-posta",
+    emailPlaceholder: "ornek@sirket.com",
+    password: "Şifre",
+    passwordPlaceholder: "Şifrenizi girin",
+    showPassword: "Şifreyi Göster",
+    hidePassword: "Şifreyi Gizle",
+    forgotPassword: "Şifrenizi mi unuttunuz?",
+    rememberMe: "Beni Hatırla",
+    loggingIn: "Giriş yapılıyor...",
+    loginSuccess: "Giriş Başarılı",
+    loginFailed: "Giriş Başarısız",
+    invalidCredentials: "E-posta veya şifre hatalı",
+    accountInactive: "Hesabınız pasif durumda",
+    mustChangePassword: "İlk girişte şifrenizi değiştirmelisiniz",
+    tooManyAttempts: "Çok fazla deneme. Lütfen daha sonra tekrar deneyin",
+    welcomeBack: "Tekrar hoş geldiniz",
+    logout: "Çıkış Yap",
+    logoutConfirm: "Çıkış yapmak istediğinizden emin misiniz?",
+    sessionExpired: "Oturumunuz sona erdi",
+    pleaseLoginAgain: "Lütfen tekrar giriş yapın",
+  },
+
   // Admin Dashboard
   admin: {
     title: "Ana Panel",
