@@ -72,18 +72,21 @@ export default async function UsersPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">User Management</h1>
+          <h1 className="text-3xl font-bold text-slate-900">{TR.users.title}</h1>
           <p className="mt-2 text-slate-600">
-            Manage users across the system
+            {TR.users.subtitle}
           </p>
         </div>
         
-        <Link href="/admin/users/new">
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" />
-            Create User
-          </Button>
-        </Link>
+        {/* Only SUPER_ADMIN and ADMIN can create users */}
+        {(auth.role === "SUPER_ADMIN" || auth.role === "ADMIN") && (
+          <Link href="/admin/users/new">
+            <Button className="gap-2 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
+              <Plus className="w-4 h-4" />
+              {TR.users.createNew}
+            </Button>
+          </Link>
+        )}
       </div>
       
       <UsersTable
