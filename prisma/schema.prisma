@@ -24,15 +24,16 @@ model Site {
 }
 
 model Department {
-  id        String   @id @default(cuid())
-  siteId    String
-  name      String
-  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  users     User[]
-  createdAt DateTime @default(now())
+  id             String           @id @default(cuid())
+  siteId         String
+  name           String
+  site           Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  users          User[]
+  ratingCriteria RatingCriteria[]
+  createdAt      DateTime         @default(now())
 
-  @@index([siteId])
   @@unique([siteId, name])
+  @@index([siteId])
 }
 
 model User {
@@ -47,17 +48,17 @@ model User {
   mustChangePassword Boolean  @default(true)
   createdByUserId    String?
 
-  site         Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  site       Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
 
-  createdBy    User?   @relation("UserCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  createdUsers User[]  @relation("UserCreatedBy")
+  createdBy    User?  @relation("UserCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdUsers User[] @relation("UserCreatedBy")
 
   passwordCredential PasswordCredential?
   security           UserSecurity?
   sessions           Session[]
   securityEvents     SecurityEvent[]
-  createdAt          DateTime @default(now())
+  createdAt          DateTime            @default(now())
 
   @@index([siteId])
   @@index([departmentId])
@@ -79,13 +80,13 @@ model UserSecurity {
 }
 
 model Session {
-  id                    String   @id @default(cuid())
+  id                    String    @id @default(cuid())
   userId                String
   ip                    String
   deviceLabel           String?
   deviceFingerprintHash String
-  createdAt             DateTime @default(now())
-  lastSeenAt            DateTime @default(now())
+  createdAt             DateTime  @default(now())
+  lastSeenAt            DateTime  @default(now())
   revokedAt             DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -95,12 +96,12 @@ model Session {
 }
 
 model SecurityEvent {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   siteId     String
   userId     String?
   type       String
   metaJson   Json
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
   resolvedAt DateTime?
   resolvedBy String?
 
@@ -121,4 +122,19 @@ model TrustedIp {
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@index([siteId])
+}
+
+model RatingCriteria {
+  id           String   @id @default(cuid())
+  departmentId String
+  name         String
+  weight       Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, name])
+  @@index([departmentId])
 }
