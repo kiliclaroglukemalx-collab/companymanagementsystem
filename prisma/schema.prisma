@@ -21,6 +21,7 @@ model Site {
   securityEvents SecurityEvent[]
   trustedIps     TrustedIp[]
   arenaEvents    ArenaEvent[]
+  ratings        Rating[]
   createdAt      DateTime        @default(now())
 }
 
@@ -31,6 +32,7 @@ model Department {
   site           Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
   users          User[]
   ratingCriteria RatingCriteria[]
+  ratings        Rating[]
   createdAt      DateTime         @default(now())
 
   @@unique([siteId, name])
@@ -59,6 +61,8 @@ model User {
   security           UserSecurity?
   sessions           Session[]
   securityEvents     SecurityEvent[]
+  ratingsGiven       Rating[]            @relation("RatingsGiven")
+  ratingsReceived    Rating[]            @relation("RatingsReceived")
   createdAt          DateTime            @default(now())
 
   @@index([siteId])
@@ -126,18 +130,58 @@ model TrustedIp {
 }
 
 model RatingCriteria {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   departmentId String
   name         String
-  weight       Int      @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  weight       Int           @default(0)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  department   Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  ratingScores RatingScore[]
 
   @@unique([departmentId, name])
   @@index([departmentId])
+}
+
+// Günlük puanlama kaydı
+model Rating {
+  id           String        @id @default(cuid())
+  siteId       String
+  departmentId String
+  raterUserId  String        // Puan veren
+  ratedUserId  String        // Puan alan
+  date         String        // YYYY-MM-DD format
+  totalScore   Float?        // Toplam puan (hesaplanmış)
+  createdAt    DateTime      @default(now())
+
+  site         Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  department   Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  rater        User          @relation("RatingsGiven", fields: [raterUserId], references: [id], onDelete: Cascade)
+  rated        User          @relation("RatingsReceived", fields: [ratedUserId], references: [id], onDelete: Cascade)
+  scores       RatingScore[]
+
+  @@unique([raterUserId, ratedUserId, date]) // Aynı gün aynı kişiyi 2 kere puanlayamaz
+  @@index([siteId])
+  @@index([departmentId])
+  @@index([date])
+  @@index([ratedUserId])
+}
+
+// Kriter bazlı puanlar
+model RatingScore {
+  id         String   @id @default(cuid())
+  ratingId   String
+  criteriaId String
+  score      Int      // 1-10 arası
+  createdAt  DateTime @default(now())
+
+  rating   Rating         @relation(fields: [ratingId], references: [id], onDelete: Cascade)
+  criteria RatingCriteria @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+
+  @@index([ratingId])
+  @@index([criteriaId])
 }
 
 // Arena Live Feed Events
