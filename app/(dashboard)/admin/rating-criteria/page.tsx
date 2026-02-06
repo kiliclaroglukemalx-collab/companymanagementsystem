@@ -1,4 +1,5 @@
 import { getServerAuthContext } from "@/lib/server-auth"
+import { isLimitedAccess, isSuperAdmin } from "@/lib/role-helpers"
 import { listCriteria } from "@/lib/rating-actions"
 import { basePrisma } from "@/lib/prisma"
 import { CriteriaManagement } from "@/components/admin/criteria-management-new"
@@ -13,7 +14,7 @@ export default async function RatingCriteriaPage() {
   }
   
   // Block MANAGER and STAFF from managing criteria
-  if (auth.role === "MANAGER" || auth.role === "STAFF") {
+  if (isLimitedAccess(auth.role)) {
     return (
       <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
         <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -29,7 +30,7 @@ export default async function RatingCriteriaPage() {
   
   // Get departments
   const departments = await basePrisma.department.findMany({
-    where: auth.role === "SUPER_ADMIN" ? {} : { siteId: auth.siteId },
+    where: isSuperAdmin(auth.role) ? {} : { siteId: auth.siteId },
     include: {
       site: { select: { name: true } },
       _count: { select: { ratingCriteria: true } },

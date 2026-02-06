@@ -1,5 +1,6 @@
 import { listUsers, listSites, listDepartmentsForCurrentAdmin } from "@/lib/admin-actions"
 import { getServerAuthContext } from "@/lib/server-auth"
+import { isAdminLike, isLimitedAccess } from "@/lib/role-helpers"
 import { UsersTable } from "@/components/admin/users-table"
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,7 +28,7 @@ export default async function UsersPage({
   }
   
   // Block MANAGER and STAFF
-  if (auth.role === "MANAGER" || auth.role === "STAFF") {
+  if (isLimitedAccess(auth.role)) {
     return (
       <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
         <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -52,7 +53,7 @@ export default async function UsersPage({
       page,
       limit: 50,
     }),
-    auth.role === "SUPER_ADMIN" ? listSites() : Promise.resolve({ success: true, data: [] }),
+    isSuperAdmin(auth.role) ? listSites() : Promise.resolve({ success: true, data: [] }),
     listDepartmentsForCurrentAdmin(),
   ])
   
@@ -79,7 +80,7 @@ export default async function UsersPage({
         </div>
         
         {/* Only SUPER_ADMIN and ADMIN can create users */}
-        {(auth.role === "SUPER_ADMIN" || auth.role === "ADMIN") && (
+        {isAdminLike(auth.role) && (
           <Link href="/admin/users/new">
             <Button className="gap-2 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
               <Plus className="w-4 h-4" />
