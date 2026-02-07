@@ -361,6 +361,52 @@ function ProfilContent() {
         <InputField label="E-posta" defaultValue="ahmet.yilmaz@sirket.com" icon={Mail} />
       </div>
 
+      {/* Logout Section */}
+      <div 
+        className="p-5 rounded-2xl"
+        style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239, 68, 68, 0.2)" }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(239, 68, 68, 0.15)" }}>
+              <LogOut className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-white">Oturumu Kapat</h4>
+              <p className="text-xs text-neutral-500 mt-0.5">Bu cihazdan cikis yap</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              if (confirm('Cikis yapmak istediginize emin misiniz?')) {
+                try {
+                  const res = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                  })
+                  if (res.ok) {
+                    window.location.href = '/login'
+                  } else {
+                    alert('Cikis yapilamadi. Lutfen tekrar deneyin.')
+                  }
+                } catch (error) {
+                  console.error('Logout error:', error)
+                  alert('Bir hata olustu. Lutfen tekrar deneyin.')
+                }
+              }
+            }}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+            style={{ 
+              background: "rgba(239, 68, 68, 0.15)", 
+              color: "#ef4444",
+              border: "1px solid rgba(239, 68, 68, 0.3)"
+            }}
+          >
+            Cikis Yap
+          </button>
+        </div>
+      </div>
+
       <SaveButton />
     </div>
   )
