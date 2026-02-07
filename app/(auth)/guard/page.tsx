@@ -32,10 +32,9 @@ export default function VideoGuardPage() {
 
   return (
     <div className="relative min-h-screen bg-black flex items-center justify-center">
-      {/* Video Background - Net */}
+      {/* Video Background - Tek Seferlik */}
       <video 
         autoPlay 
-        loop 
         muted 
         playsInline 
         className="absolute inset-0 w-full h-full object-cover opacity-90"
