@@ -23,8 +23,8 @@ export default function LoginPage() {
       const result = await loginAction(formData)
 
       if (result.success) {
-        // Başarılı giriş - redirect to arena
-        router.push("/arena")
+        // Başarılı giriş - redirect to home dashboard
+        router.push("/")
         router.refresh()
       } else {
         setError(result.error)
