@@ -28,6 +28,7 @@ model Site {
   dataUploads     DataUpload[]
   financialFlows  FinancialFlow[]
   aiAnalyses      AIAnalysis[]
+  targetedAnnouncements Announcement[] @relation("AnnouncementTargetSite")
   createdAt       DateTime          @default(now())
 }
 
@@ -42,6 +43,7 @@ model Department {
   monthlyScores   MonthlyScore[]
   leagueRankings  LeagueRanking[]
   monthlyChampions MonthlyChampion[]
+  targetedAnnouncements Announcement[] @relation("AnnouncementTargetDepartment")
   createdAt       DateTime          @default(now())
 
   @@unique([siteId, name])
@@ -404,5 +406,90 @@ model AIAnalysis {
   @@index([analyticModule])
   @@index([isPublished])
   @@index([createdAt])
+}
+
+// Duyuru Sistemi - Announcement System
+enum AnnouncementSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AnnouncementTargetType {
+  ALL             // Tüm kullanıcılar
+  ADMIN_ONLY      // Sadece adminler
+  STAFF_ONLY      // Sadece personel
+  SITE_SPECIFIC   // Belirli site
+  DEPARTMENT_SPECIFIC  // Belirli birim
+  ROLE_SPECIFIC   // Belirli rol
+}
+
+enum DisplayMode {
+  ONCE            // Bir kez göster
+  EVERY_LOGIN     // Her giriş
+  DAILY           // Günlük
+}
+
+model Announcement {
+  id              String                  @id @default(cuid())
+  title           String
+  content         String                  @db.Text
+  severity        AnnouncementSeverity    @default(INFO)
+  targetType      AnnouncementTargetType  @default(ALL)
+  
+  // Hedef filtreleme
+  targetSiteId       String?              // Sadece bu site için (null = tüm siteler)
+  targetDepartmentId String?              // Sadece bu birim için (null = tüm birimler)
+  targetRole         UserRole?            // Sadece bu rol için (null = tüm roller)
+  
+  // Görüntüleme ayarları
+  showAsPopup     Boolean                 @default(false)  // Ana sayfada popup olarak çıksın mı?
+  displayMode     DisplayMode             @default(ONCE)   // Gösterim modu
+  activeDays      String[]                @default([])     // Aktif günler: ["Pzt", "Sal", "Car", "Per", "Cum", "Cmt", "Paz"]
+  removeOnRead    Boolean                 @default(true)   // Okunduğunda kaldırılsın mı?
+  
+  // Geçerlilik
+  isActive        Boolean                 @default(true)
+  expiresAt       DateTime?               // Son kullanma tarihi
+  
+  // Meta
+  createdByUserId String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  
+  // İlişkiler
+  targetSite      Site?                   @relation("AnnouncementTargetSite", fields: [targetSiteId], references: [id], onDelete: Cascade)
+  targetDepartment Department?            @relation("AnnouncementTargetDepartment", fields: [targetDepartmentId], references: [id], onDelete: Cascade)
+  readRecords     AnnouncementRead[]
+  
+  @@index([isActive])
+  @@index([targetType])
+  @@index([targetSiteId])
+  @@index([targetDepartmentId])
+  @@index([createdAt])
+}
+
+// Duyuru okunma kaydı
+model AnnouncementRead {
+  id              String       @id @default(cuid())
+  announcementId  String
+  userId          String
+  readAt          DateTime     @default(now())
+  
+  announcement    Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  
+  @@unique([announcementId, userId])
+  @@index([announcementId])
+  @@index([userId])
+  @@index([readAt])
+}
+
+// Kullanıcı bildirim tercihleri
+model UserNotificationPreference {
+  userId                    String   @id
+  disableInfoNotifications  Boolean  @default(false)  // Bilgi bildirimleri kapalı
+  disableWarningNotifications Boolean @default(false) // Uyarı bildirimleri kapalı
+  disablePopups             Boolean  @default(false)  // Popup'ları kapat
+  updatedAt                 DateTime @updatedAt
 }
 

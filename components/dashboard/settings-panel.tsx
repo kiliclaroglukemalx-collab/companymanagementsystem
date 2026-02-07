@@ -552,6 +552,45 @@ function BildirimlerContent() {
     teamActivities: false,
     shiftChanges: true,
   })
+  const [preferences, setPreferences] = useState<any>(null)
+  const [loadingPreferences, setLoadingPreferences] = useState(true)
+
+  // Load notification preferences from API
+  useEffect(() => {
+    loadPreferences()
+  }, [])
+
+  const loadPreferences = async () => {
+    try {
+      const response = await fetch('/api/notifications/preferences')
+      if (response.ok) {
+        const data = await response.json()
+        setPreferences(data.preferences)
+      }
+    } catch (error) {
+      console.error('Failed to load preferences:', error)
+    } finally {
+      setLoadingPreferences(false)
+    }
+  }
+
+  const updatePreference = async (key: string, value: boolean) => {
+    try {
+      const payload = { [key]: value }
+      const response = await fetch('/api/notifications/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPreferences(data.preferences)
+      }
+    } catch (error) {
+      console.error('Failed to update preference:', error)
+    }
+  }
 
   const toggleNotification = (key: keyof typeof notifications) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }))
@@ -737,53 +776,140 @@ function BildirimlerContent() {
 
       {/* Settings Section */}
       {activeSection === 'settings' && (
-        <div className="space-y-4">
-          <p className="text-[10px] font-semibold text-neutral-500 tracking-wider">BILDIRIM TERCIHLERI</p>
-          <div className="space-y-3">
-            <NotificationToggleRow
-              icon={<Info className="w-4 h-4" />}
-              label="Onemli guncellemeler"
-              description="Sistem bakim ve kritik duyurular"
-              checked={notifications.importantUpdates}
-              onChange={() => toggleNotification('importantUpdates')}
-              required
-            />
-            <NotificationToggleRow
-              icon={<Shield className="w-4 h-4" />}
-              label="Guvenlik uyarilari"
-              description="Hesap ve sistem guvenlik bildirimleri"
-              checked={notifications.securityAlerts}
-              onChange={() => toggleNotification('securityAlerts')}
-              required
-            />
-            <NotificationToggleRow
-              icon={<Bell className="w-4 h-4" />}
-              label="Yeni ozellikler"
-              description="Platform yenilikleri hakkinda bilgi"
-              checked={notifications.newFeatures}
-              onChange={() => toggleNotification('newFeatures')}
-              optional
-            />
-            <NotificationToggleRow
-              icon={<Users className="w-4 h-4" />}
-              label="Ekip aktiviteleri"
-              description="Departman ve takim bildirimleri"
-              checked={notifications.teamActivities}
-              onChange={() => toggleNotification('teamActivities')}
-              optional
-            />
-            {showShiftOption && (
-              <NotificationToggleRow
-                icon={<Clock className="w-4 h-4" />}
-                label="Vardiya degisiklikleri"
-                description="Mesai takvimi ve vardiya guncellemeleri"
-                checked={notifications.shiftChanges}
-                onChange={() => toggleNotification('shiftChanges')}
-              />
-            )}
-          </div>
-          <SaveButton />
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {loadingPreferences ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-neutral-500">Yükleniyor...</p>
+            </div>
+          ) : (
+            <>
+              {/* System Notifications Section */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-semibold text-neutral-500 tracking-wider">SISTEM DUYURULARI</p>
+                <div 
+                  className="p-4 rounded-xl"
+                  style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-white mb-1">Kritik Duyurular</h4>
+                      <p className="text-xs text-neutral-400">
+                        Kritik önem seviyesindeki duyurular her zaman gösterilir ve kapatılamaz. 
+                        Bu, sistem güvenliği ve acil güncellemeler içindir.
+                      </p>
+                    </div>
+                    <div 
+                      className="px-3 py-1 rounded-lg text-[10px] font-bold"
+                      style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}
+                    >
+                      ZORUNLU
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* User Preference Controls */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-semibold text-neutral-500 tracking-wider">BILDIRIM TERCIHLERI</p>
+                
+                {/* Disable Popups */}
+                <NotificationToggleRow
+                  icon={<Bell className="w-4 h-4" />}
+                  label="Popup Bildirimleri"
+                  description="Ana sayfada açılan bildirim popup'larını göster"
+                  checked={!preferences?.disablePopups}
+                  onChange={() => updatePreference('disablePopups', !preferences?.disablePopups)}
+                  optional
+                />
+
+                {/* Info Notifications */}
+                <NotificationToggleRow
+                  icon={<Info className="w-4 h-4" />}
+                  label="Bilgilendirme Duyuruları"
+                  description="Genel bilgi ve güncellemeler"
+                  checked={!preferences?.disableInfoNotifications}
+                  onChange={() => updatePreference('disableInfoNotifications', !preferences?.disableInfoNotifications)}
+                  optional
+                />
+
+                {/* Warning Notifications */}
+                <NotificationToggleRow
+                  icon={<AlertTriangle className="w-4 h-4" />}
+                  label="Uyarı Duyuruları"
+                  description="Önemli uyarılar ve dikkat gerektiren durumlar"
+                  checked={!preferences?.disableWarningNotifications}
+                  onChange={() => updatePreference('disableWarningNotifications', !preferences?.disableWarningNotifications)}
+                  optional
+                />
+              </div>
+
+              {/* Legacy Settings (kept for backward compatibility) */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-semibold text-neutral-500 tracking-wider">DIĞER BILDIRIMLER</p>
+                <NotificationToggleRow
+                  icon={<Shield className="w-4 h-4" />}
+                  label="Güvenlik uyarıları"
+                  description="Hesap ve sistem güvenlik bildirimleri"
+                  checked={notifications.securityAlerts}
+                  onChange={() => toggleNotification('securityAlerts')}
+                  required
+                />
+                <NotificationToggleRow
+                  icon={<Bell className="w-4 h-4" />}
+                  label="Yeni özellikler"
+                  description="Platform yenilikleri hakkında bilgi"
+                  checked={notifications.newFeatures}
+                  onChange={() => toggleNotification('newFeatures')}
+                  optional
+                />
+                <NotificationToggleRow
+                  icon={<Users className="w-4 h-4" />}
+                  label="Ekip aktiviteleri"
+                  description="Departman ve takım bildirimleri"
+                  checked={notifications.teamActivities}
+                  onChange={() => toggleNotification('teamActivities')}
+                  optional
+                />
+                {showShiftOption && (
+                  <NotificationToggleRow
+                    icon={<Clock className="w-4 h-4" />}
+                    label="Vardiya değişiklikleri"
+                    description="Mesai takvimi ve vardiya güncellemeleri"
+                    checked={notifications.shiftChanges}
+                    onChange={() => toggleNotification('shiftChanges')}
+                  />
+                )}
+              </div>
+
+              {/* Help Text */}
+              <div 
+                className="p-4 rounded-xl"
+                style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+              >
+                <div className="flex items-start gap-3">
+                  <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-neutral-400">
+                    <p className="mb-2">
+                      <strong className="text-blue-400">Not:</strong> Kritik önem seviyesindeki duyurular, 
+                      tercihlerinize bakılmaksızın her zaman gösterilir. Bu ayarlar sadece bilgi ve uyarı 
+                      seviyesindeki duyurular için geçerlidir.
+                    </p>
+                    <p>
+                      Yönetici tarafından gönderilen özel hedefli duyurular da tercihlerinizden bağımsız olarak 
+                      size ulaştırılabilir.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </motion.div>
       )}
 
       {/* Notification Detail Modal */}
