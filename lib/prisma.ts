@@ -81,3 +81,4 @@ export function getSiteScopedPrisma(siteId: string) {
 }
 
 export { basePrisma }
+export { basePrisma as prisma } // Alias for compatibility

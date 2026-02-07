@@ -18,10 +18,14 @@ import {
   Building2,
   Search,
   Zap,
-  Award
+  Award,
+  FileText,
+  DollarSign
 } from "lucide-react"
 import { brands, type Brand } from "@/lib/dashboard-data"
 import { useSite } from "@/lib/site-context"
+import { CreateRequestForm } from "./create-request-form"
+import { RequestManagement } from "./request-management"
 
 // Chronos Module Color Palette
 const COLORS = {
@@ -175,9 +179,9 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
   const [currentWeek] = useState("27 Ocak - 2 Subat 2025")
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [expandedDept, setExpandedDept] = useState<string | null>(null)
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
-  const [requestType, setRequestType] = useState<"leave" | "shift">("leave")
-  const [showNotifications, setShowNotifications] = useState(false)
+  const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false)
+  const [isRequestManagementOpen, setIsRequestManagementOpen] = useState(false)
+  const [requestManagementView, setRequestManagementView] = useState<"my-requests" | "to-approve">("my-requests")
   
   // Timeline state
   const [isDragging, setIsDragging] = useState(false)
@@ -233,11 +237,6 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
       return acc + day.shifts.reduce((sum, shift) => sum + shift.personnel, 0)
     }, 0)
   }, [])
-
-  const openRequestModal = (type: "leave" | "shift") => {
-    setRequestType(type)
-    setIsRequestModalOpen(true)
-  }
 
   const filteredBrands = useMemo(() => {
     if (!brandSearchQuery.trim()) return brands
@@ -877,10 +876,12 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
                   }}
                   whileHover={{ borderColor: COLORS.champagneGold }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => openRequestModal("leave")}
+                  onClick={() => {
+                    setIsCreateRequestOpen(true)
+                  }}
                 >
                   <Calendar className="w-4 h-4" style={{ color: COLORS.champagneGold }} />
-                  Izin Talep Et
+                  Talep Oluştur
                 </motion.button>
                 <motion.button
                   className="flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[14px] font-medium transition-all"
@@ -891,38 +892,46 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
                   }}
                   whileHover={{ borderColor: COLORS.champagneGold }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => openRequestModal("shift")}
+                  onClick={() => {
+                    setRequestManagementView("my-requests")
+                    setIsRequestManagementOpen(true)
+                  }}
                 >
-                  <Clock className="w-4 h-4" style={{ color: COLORS.champagneGold }} />
-                  Mesai Talep Et
+                  <FileText className="w-4 h-4" style={{ color: COLORS.champagneGold }} />
+                  Taleplerim
                 </motion.button>
               </>
             )}
 
             {/* Manager Notifications */}
             {isManager && (
-              <motion.button
-                className="relative flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[14px] font-medium transition-all"
-                style={{
-                  background: COLORS.glass,
-                  border: `1px solid ${COLORS.glassBorder}`,
-                  color: COLORS.goldLight,
-                }}
-                whileHover={{ borderColor: COLORS.champagneGold }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <AlertCircle className="w-4 h-4" style={{ color: COLORS.champagneGold }} />
-                Talepler
-                {mockPendingRequests.length > 0 && (
-                  <span 
-                    className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold text-white"
-                    style={{ background: "#ef4444" }}
-                  >
-                    {mockPendingRequests.length}
-                  </span>
-                )}
-              </motion.button>
+              <>
+                <motion.button
+                  className="relative flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[14px] font-medium transition-all"
+                  style={{
+                    background: COLORS.glass,
+                    border: `1px solid ${COLORS.glassBorder}`,
+                    color: COLORS.goldLight,
+                  }}
+                  whileHover={{ borderColor: COLORS.champagneGold }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setRequestManagementView("to-approve")
+                    setIsRequestManagementOpen(true)
+                  }}
+                >
+                  <AlertCircle className="w-4 h-4" style={{ color: COLORS.champagneGold }} />
+                  Onay Bekleyen Talepler
+                  {mockPendingRequests.length > 0 && (
+                    <span 
+                      className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold text-white"
+                      style={{ background: "#ef4444" }}
+                    >
+                      {mockPendingRequests.length}
+                    </span>
+                  )}
+                </motion.button>
+              </>
             )}
 
             {/* Add Shift Button */}
@@ -1191,234 +1200,6 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
         </div>
       </div>
 
-      {/* Notifications Dropdown */}
-      <AnimatePresence>
-        {showNotifications && isManager && (
-          <motion.div
-            className="fixed top-24 right-10 w-96 rounded-2xl overflow-hidden z-50"
-            style={{
-              background: "rgba(0, 0, 0, 0.95)",
-              border: `1px solid ${COLORS.glassBorder}`,
-              backdropFilter: "blur(40px)",
-              boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.8)`,
-            }}
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-          >
-            <div 
-              className="p-4 border-b flex items-center justify-between"
-              style={{ borderColor: COLORS.glassBorder }}
-            >
-              <h3 className="text-[15px] font-bold" style={{ color: COLORS.goldLight }}>Bekleyen Talepler</h3>
-              <motion.button
-                onClick={() => setShowNotifications(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: COLORS.glass }}
-                whileHover={{ background: COLORS.glassHover }}
-              >
-                <X size={16} style={{ color: COLORS.goldLight }} />
-              </motion.button>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {mockPendingRequests.map((request, index) => (
-                <motion.div
-                  key={request.id}
-                  className="p-4 border-b"
-                  style={{ borderColor: COLORS.glassBorder }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-[14px] font-semibold" style={{ color: COLORS.goldLight }}>
-                        {request.employeeName}
-                      </p>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">
-                        {request.type === "leave" ? `Izin: ${request.reason}` : `Vardiya Degisikligi: ${request.fromShift} → ${request.toShift}`}
-                      </p>
-                      <p className="text-[11px] mt-1" style={{ color: COLORS.champagneGold + "80" }}>{request.date}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <motion.button
-                        className="w-8 h-8 rounded-full flex items-center justify-center"
-                        style={{ 
-                          background: `${COLORS.electricBlue}20`,
-                          color: COLORS.electricBlue,
-                        }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Check size={14} />
-                      </motion.button>
-                      <motion.button
-                        className="w-8 h-8 rounded-full flex items-center justify-center"
-                        style={{ 
-                          background: "rgba(239, 68, 68, 0.2)",
-                          color: "#ef4444",
-                        }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <X size={14} />
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Request Modal */}
-      <AnimatePresence>
-        {isRequestModalOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div 
-              className="absolute inset-0"
-              style={{ background: "rgba(0, 0, 0, 0.8)" }}
-              onClick={() => setIsRequestModalOpen(false)}
-            />
-            <motion.div
-              className="relative w-[440px] rounded-3xl overflow-hidden"
-              style={{
-                background: COLORS.background,
-                border: `1px solid ${COLORS.glassBorder}`,
-                boxShadow: `0 0 80px ${COLORS.electricBlue}20`,
-              }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-            >
-              <div 
-                className="p-6 border-b"
-                style={{ borderColor: COLORS.glassBorder }}
-              >
-                <h2 className="text-[20px] font-bold" style={{ color: COLORS.goldLight }}>
-                  {requestType === "leave" ? "Izin Talep Et" : "Mesai Degisikligi Talep Et"}
-                </h2>
-              </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label 
-                    className="text-[12px] font-semibold uppercase tracking-wider block mb-2"
-                    style={{ color: COLORS.champagneGold }}
-                  >
-                    Tarih
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full p-3 rounded-xl text-[14px] outline-none"
-                    style={{
-                      background: COLORS.glass,
-                      border: `1px solid ${COLORS.glassBorder}`,
-                      color: COLORS.goldLight,
-                    }}
-                  />
-                </div>
-                {requestType === "leave" ? (
-                  <div>
-                    <label 
-                      className="text-[12px] font-semibold uppercase tracking-wider block mb-2"
-                      style={{ color: COLORS.champagneGold }}
-                    >
-                      Izin Turu
-                    </label>
-                    <select
-                      className="w-full p-3 rounded-xl text-[14px] outline-none"
-                      style={{
-                        background: COLORS.glass,
-                        border: `1px solid ${COLORS.glassBorder}`,
-                        color: COLORS.goldLight,
-                      }}
-                    >
-                      <option value="annual">Yillik Izin</option>
-                      <option value="sick">Saglik Izni</option>
-                      <option value="personal">Kisisel Izin</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label 
-                      className="text-[12px] font-semibold uppercase tracking-wider block mb-2"
-                      style={{ color: COLORS.champagneGold }}
-                    >
-                      Istenen Vardiya
-                    </label>
-                    <select
-                      className="w-full p-3 rounded-xl text-[14px] outline-none"
-                      style={{
-                        background: COLORS.glass,
-                        border: `1px solid ${COLORS.glassBorder}`,
-                        color: COLORS.goldLight,
-                      }}
-                    >
-                      <option value="morning">Sabah (08:00 - 16:00)</option>
-                      <option value="afternoon">Ogle (16:00 - 00:00)</option>
-                      <option value="night">Gece (00:00 - 08:00)</option>
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label 
-                    className="text-[12px] font-semibold uppercase tracking-wider block mb-2"
-                    style={{ color: COLORS.champagneGold }}
-                  >
-                    Aciklama
-                  </label>
-                  <textarea
-                    rows={3}
-                    className="w-full p-3 rounded-xl text-[14px] outline-none resize-none"
-                    style={{
-                      background: COLORS.glass,
-                      border: `1px solid ${COLORS.glassBorder}`,
-                      color: COLORS.goldLight,
-                    }}
-                    placeholder="Opsiyonel aciklama..."
-                  />
-                </div>
-              </div>
-              <div 
-                className="p-6 border-t flex items-center justify-end gap-3"
-                style={{ borderColor: COLORS.glassBorder }}
-              >
-                <motion.button
-                  className="px-5 py-2.5 rounded-full text-[14px] font-medium"
-                  style={{
-                    background: COLORS.glass,
-                    border: `1px solid ${COLORS.glassBorder}`,
-                    color: COLORS.goldLight,
-                  }}
-                  whileHover={{ borderColor: COLORS.champagneGold }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsRequestModalOpen(false)}
-                >
-                  Iptal
-                </motion.button>
-                <motion.button
-                  className="px-5 py-2.5 rounded-full text-[14px] font-bold"
-                  style={{
-                    background: COLORS.champagneGold,
-                    color: COLORS.background,
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Talep Gonder
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Brand Search Modal */}
       <AnimatePresence>
         {isBrandSearchOpen && (
@@ -1492,6 +1273,56 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
                     <span className="text-[14px] font-medium" style={{ color: COLORS.goldLight }}>{brand.name}</span>
                   </motion.button>
                 ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Request Form */}
+      <CreateRequestForm
+        isOpen={isCreateRequestOpen}
+        onClose={() => setIsCreateRequestOpen(false)}
+        onSuccess={() => {
+          // Refresh request list if management panel is open
+          if (isRequestManagementOpen) {
+            // This will trigger a refresh in RequestManagement component
+            setIsRequestManagementOpen(false)
+            setTimeout(() => setIsRequestManagementOpen(true), 100)
+          }
+        }}
+      />
+
+      {/* Request Management Panel */}
+      <AnimatePresence>
+        {isRequestManagementOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div 
+              className="absolute inset-0"
+              style={{ background: "rgba(0, 0, 0, 0.8)" }}
+              onClick={() => setIsRequestManagementOpen(false)}
+            />
+            <motion.div
+              className="relative w-[900px] max-h-[90vh] overflow-y-auto rounded-3xl"
+              style={{
+                background: COLORS.background,
+                border: `1px solid ${COLORS.glassBorder}`,
+                boxShadow: `0 0 80px ${COLORS.electricBlue}20`
+              }}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <div className="p-8">
+                <RequestManagement 
+                  viewMode={requestManagementView}
+                  onClose={() => setIsRequestManagementOpen(false)}
+                />
               </div>
             </motion.div>
           </motion.div>

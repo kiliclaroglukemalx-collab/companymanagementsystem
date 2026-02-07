@@ -77,6 +77,9 @@ model User {
   monthlyScores      MonthlyScore[]
   leagueRankings     LeagueRanking[]
   monthlyChampions   MonthlyChampion[]
+  requestsMade       Request[]           @relation("RequestedBy")
+  requestsToApprove  Request[]           @relation("Approver")
+  salary             UserSalary?
   createdAt          DateTime            @default(now())
 
   @@index([siteId])
@@ -491,5 +494,120 @@ model UserNotificationPreference {
   disableWarningNotifications Boolean @default(false) // Uyarı bildirimleri kapalı
   disablePopups             Boolean  @default(false)  // Popup'ları kapat
   updatedAt                 DateTime @updatedAt
+}
+
+// Talep Sistemi - Request System
+
+// Talep Türleri
+enum RequestType {
+  LEAVE        // İzin talebi
+  OVERTIME     // Mesai talebi
+  ADVANCE      // Avans talebi
+}
+
+// Talep Durumu
+enum RequestStatus {
+  PENDING      // Beklemede
+  APPROVED     // Onaylandı
+  REJECTED     // Reddedildi
+  CANCELLED    // İptal edildi
+}
+
+// İzin/Mesai Türleri
+enum LeaveType {
+  ANNUAL       // Yıllık izin
+  SICK         // Sağlık izni
+  PERSONAL     // Kişisel izin
+  OVERTIME     // Mesai
+}
+
+// Ana Talep Modeli
+model Request {
+  id                String        @id @default(cuid())
+  type              RequestType
+  status            RequestStatus @default(PENDING)
+  
+  // Talep eden kişi
+  requestedById     String
+  requestedBy       User          @relation("RequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+  
+  // Onaylayacak kişi (Birim Müdürü veya Finans Müdürü)
+  approverId        String?
+  approver          User?         @relation("Approver", fields: [approverId], references: [id], onDelete: SetNull)
+  
+  // Onay/Red bilgileri
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  rejectionReason   String?       @db.Text
+  
+  // Genel bilgiler
+  reason            String        @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Alt detaylar (polymorphic ilişki)
+  leaveRequest      LeaveRequest?
+  advanceRequest    AdvanceRequest?
+  
+  @@index([requestedById])
+  @@index([approverId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// İzin/Mesai Talebi Detayları
+model LeaveRequest {
+  id          String    @id @default(cuid())
+  requestId   String    @unique
+  request     Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  leaveType   LeaveType
+  startDate   DateTime  // Başlangıç tarihi
+  endDate     DateTime  // Bitiş tarihi
+  days        Int       // Gün sayısı
+  
+  // Mesai takvimine otomatik yansıtma için
+  isReflectedToCalendar Boolean @default(false)
+  reflectedAt           DateTime?
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([requestId])
+  @@index([startDate])
+}
+
+// Avans Talebi Detayları
+model AdvanceRequest {
+  id          String    @id @default(cuid())
+  requestId   String    @unique
+  request     Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  amount      Float     // Talep edilen miktar
+  userSalary  Float     // Kullanıcının kayıtlı maaşı (kontrol için)
+  
+  // Ödeme bilgileri (onaylandıysa)
+  isPaid      Boolean   @default(false)
+  paidAt      DateTime?
+  paidBy      String?   // Ödemeyi yapan kişi
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([requestId])
+}
+
+// Kullanıcı maaş bilgisi (Avans kontrolü için)
+model UserSalary {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  monthlySalary Float   // Aylık maaş
+  currency      String  @default("TRY")
+  
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId])
 }
 

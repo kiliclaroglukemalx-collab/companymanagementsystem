@@ -12,7 +12,45 @@
 - ✅ **Rating Core** (Kriter bazlı günlük puanlama sistemi)
 - ✅ **Ay Sonu Şampiyonları** (Otomatik arşivleme, kutlama ekranı)
 - ✅ **Veri Yükleme Merkezi** (Excel/CSV/JSON upload, AI analiz, finansal akış otomasyonu)
+- ✅ **Talep Sistemi** (İzin, Mesai, Avans talepleri - Hiyerarşik onay sistemi)
 - ✅ **Türkçe UI** (Merkezi metin yönetimi)
+
+## 🆕 Talep Sistemi (Request System)
+
+**Yeni Özellik:** PDF sayfa 346'daki hiyerarşiye (Personel → Admin → Birim Müdürü → Genel Müdür) uygun tam entegre talep yönetim sistemi.
+
+### Ana Özellikler
+- **📅 İzin/Mesai Talebi:** Takvim üzerinden tarih seçimi, sadece Birim Müdürü'ne gider
+- **💰 Avans Talebi:** Tüm avans talepleri direkt Finans Müdürü'ne düşer
+- **🔒 Maaş Kontrolü:** Avans miktarı personelin maaşını aşamaz (kod seviyesinde zorunlu)
+- **📊 Otomatik Yansıtma:** Onaylanan talepler Mesai Takvimi'ne otomatik yansıtılır
+- **👔 Yönetici Paneli:** Onay/red, durum takibi, geçmiş görüntüleme
+
+### Hızlı Başlangıç
+```bash
+# Migration'ı çalıştır
+npx prisma migrate dev
+
+# Seed data (opsiyonel)
+node scripts/seed-request-system.js
+```
+
+### Kullanım
+**Personel için:**
+1. Mesai Takvimi → "Talep Oluştur"
+2. Talep türü seç (İzin/Mesai/Avans)
+3. Detayları doldur ve gönder
+
+**Yönetici için:**
+1. Mesai Takvimi → "Onay Bekleyen Talepler"
+2. Talepleri incele
+3. Onayla veya reddet
+
+### Dokümantasyon
+- `docs/REQUEST_SYSTEM.md` - Detaylı teknik dokümantasyon
+- `docs/REQUEST_SYSTEM_QUICKSTART.md` - Hızlı başlangıç rehberi
+
+---
 
 ## 🆕 Veri Yükleme Merkezi
 
