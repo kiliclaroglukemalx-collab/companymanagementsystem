@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { AuthContext } from "@/lib/auth"
-import { Building2, Users, Layout, BarChart3, Home, Monitor, Shield, LogOut, ChevronDown } from "lucide-react"
+import { Building2, Users, Layout, BarChart3, Home, Monitor, Shield, LogOut, ChevronDown, Upload } from "lucide-react"
 import { logoutAction } from "@/app/(auth)/logout/actions"
 
 const navItems = [
@@ -32,6 +32,12 @@ const navItems = [
     label: "Users",
     icon: Users,
     roles: ["SUPER_ADMIN", "ADMIN"],
+  },
+  {
+    href: "/admin/data-upload",
+    label: "Data Upload",
+    icon: Upload,
+    roles: ["SUPER_ADMIN"],
   },
   {
     href: "/admin/sessions",

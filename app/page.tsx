@@ -8,6 +8,7 @@ import { useTheme } from "@/lib/theme-context"
 import { SiteProvider } from "@/lib/site-context"
 import { HybridBrandSelector } from "@/components/dashboard/hybrid-brand-selector"
 import { SimpleCarousel } from "@/components/dashboard/simple-carousel"
+import { FinancialFlowWidget } from "@/components/dashboard/financial-flow-widget"
 import { 
   ArenaSkeleton, 
   ShiftCalendarSkeleton, 
@@ -220,6 +221,11 @@ function DashboardContent({
                     />
                   </div>
                 </motion.div>
+              </section>
+
+              {/* Financial Flow Widget - Para Nasıl Akıyor? */}
+              <section className="relative px-8 py-8" style={{ background: "#000000" }}>
+                <FinancialFlowWidget />
               </section>
 
               {/* Below-fold content - lazy loaded */}

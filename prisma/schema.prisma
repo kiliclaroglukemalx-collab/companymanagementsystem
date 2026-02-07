@@ -25,6 +25,9 @@ model Site {
   monthlyScores   MonthlyScore[]
   leagueRankings  LeagueRanking[]
   monthlyChampions MonthlyChampion[]
+  dataUploads     DataUpload[]
+  financialFlows  FinancialFlow[]
+  aiAnalyses      AIAnalysis[]
   createdAt       DateTime          @default(now())
 }
 
@@ -308,5 +311,98 @@ model MonthlyChampion {
   @@unique([userId, month, personelType])
   @@index([siteId, month])
   @@index([category, month])
+}
+
+// Veri Yükleme Merkezi - Data Upload Types
+enum DataFileType {
+  EXCEL
+  CSV
+  JSON
+}
+
+enum AnalyticModule {
+  FINANS
+  SPOR
+  BON
+  CASINO
+  GENEL
+}
+
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Veri Yükleme Kaydı
+model DataUpload {
+  id              String          @id @default(cuid())
+  siteId          String
+  uploadedByEmail String
+  fileName        String
+  fileType        DataFileType
+  analyticModule  AnalyticModule
+  fileSize        Int
+  status          UploadStatus    @default(PENDING)
+  processedAt     DateTime?
+  errorMessage    String?
+  metaData        Json?           // Extra data from upload
+  createdAt       DateTime        @default(now())
+  
+  site            Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  financialFlows  FinancialFlow[]
+  aiAnalyses      AIAnalysis[]
+  
+  @@index([siteId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Para Nasıl Akıyor? - Financial Flow Data
+model FinancialFlow {
+  id              String      @id @default(cuid())
+  siteId          String
+  dataUploadId    String?
+  date            DateTime    // Tarih
+  totalIncome     Float       @default(0)  // Toplam Gelir
+  bankFees        Float       @default(0)  // Banka Kesintisi
+  withdrawals     Float       @default(0)  // Çekim
+  operatingCosts  Float       @default(0)  // İşletme Gideri
+  netProfit       Float       @default(0)  // Net Kazanç (hesaplanmış)
+  cumulativeProfit Float      @default(0)  // Kümülatif Kazanç
+  month           String      // YYYY-MM format
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  site            Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  dataUpload      DataUpload?  @relation(fields: [dataUploadId], references: [id], onDelete: SetNull)
+  
+  @@unique([siteId, date])
+  @@index([siteId, month])
+  @@index([date])
+}
+
+// AI Analyst - Yapay Zeka Analiz Raporları
+model AIAnalysis {
+  id              String      @id @default(cuid())
+  siteId          String
+  dataUploadId    String?
+  analyticModule  AnalyticModule
+  analysisDate    DateTime    @default(now())
+  prompt          String      @db.Text  // LLM'e gönderilen prompt
+  response        String      @db.Text  // LLM'den gelen analiz
+  tokensUsed      Int?        // Kullanılan token sayısı
+  model           String      @default("gpt-4") // Kullanılan AI model
+  isPublished     Boolean     @default(false) // Ana sayfada gösterilsin mi?
+  createdAt       DateTime    @default(now())
+  
+  site            Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  dataUpload      DataUpload? @relation(fields: [dataUploadId], references: [id], onDelete: SetNull)
+  
+  @@index([siteId])
+  @@index([analyticModule])
+  @@index([isPublished])
+  @@index([createdAt])
 }
 

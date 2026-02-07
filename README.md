@@ -11,7 +11,43 @@
 - ✅ **Arena Şampiyonlar Ligi** (10 kategorili lig sistemi, otomatik sıralama)
 - ✅ **Rating Core** (Kriter bazlı günlük puanlama sistemi)
 - ✅ **Ay Sonu Şampiyonları** (Otomatik arşivleme, kutlama ekranı)
+- ✅ **Veri Yükleme Merkezi** (Excel/CSV/JSON upload, AI analiz, finansal akış otomasyonu)
 - ✅ **Türkçe UI** (Merkezi metin yönetimi)
+
+## 🆕 Veri Yükleme Merkezi
+
+**Yeni Özellik:** Master Panel kullanıcıları için kapsamlı veri yönetimi ve AI destekli analiz platformu.
+
+### Ana Özellikler
+- **📤 Çoklu Format Desteği:** Excel (.xlsx), CSV (.csv), JSON dosya yükleme
+- **🎯 Analitik Modüller:** Finans, Spor, Bonus, Casino, Genel modülleri
+- **💰 Finansal Akış Otomasyonu:** "Para Nasıl Akıyor?" bölümünü otomatik besler
+- **🤖 AI Analyst:** GPT-4 ile site bazlı özel analiz raporları
+- **📊 Kümülatif Hesaplama:** Günlük üst üste finansal takip
+- **🔒 Master Panel Özel:** Sadece SUPER_ADMIN erişimi
+
+### Hızlı Başlangıç
+```bash
+# Deployment script'i çalıştır
+./scripts/deploy-data-upload.sh  # Mac/Linux
+# veya
+scripts\deploy-data-upload.bat  # Windows
+```
+
+### Kullanım
+1. SUPER_ADMIN olarak giriş yapın
+2. `/admin/data-upload` adresine gidin
+3. Site seçin, dosya tipini belirleyin
+4. Excel/CSV/JSON dosyanızı yükleyin
+5. Sistem otomatik olarak işler ve finansal akışı günceller
+6. AI analizi oluşturmak için butona tıklayın
+
+### Dokümantasyon
+- `docs/DATA-UPLOAD-CENTER.md` - Detaylı özellik dokümantasyonu
+- `docs/DATA-UPLOAD-DEPLOYMENT.md` - Deployment rehberi
+- `docs/DATA-UPLOAD-SUMMARY.md` - Proje özeti
+
+---
 
 ## 🎯 Site Selector - Global State Management
 

@@ -61,12 +61,19 @@ async function middleware(request) {
         }
     }
     const isAuthed = Boolean(authPayload);
-    if (isLoginRoute && isAuthed) {
+    const isGuardRoute = pathname === "/guard";
+    // Guard route herkese açık
+    if (isGuardRoute) {
+        return __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].next();
+    }
+    // Login olan kullanıcı /login veya /guard'a giderse anasayfaya yönlendir
+    if ((isLoginRoute || isGuardRoute) && isAuthed) {
         const url = request.nextUrl.clone();
         url.pathname = "/";
         return __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(url);
     }
-    if (!isLoginRoute && !isAuthed) {
+    // Login olmayan kullanıcı /login dışında bir yere giderse /guard'a yönlendir
+    if (!isLoginRoute && !isGuardRoute && !isAuthed) {
         if (isApiRoute) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 error: "Unauthorized"
@@ -75,7 +82,7 @@ async function middleware(request) {
             });
         }
         const url = request.nextUrl.clone();
-        url.pathname = "/login";
+        url.pathname = "/guard";
         return __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$companymanagementsystem$2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(url);
     }
     if (authPayload) {
