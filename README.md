@@ -13,7 +13,59 @@
 - ✅ **Ay Sonu Şampiyonları** (Otomatik arşivleme, kutlama ekranı)
 - ✅ **Veri Yükleme Merkezi** (Excel/CSV/JSON upload, AI analiz, finansal akış otomasyonu)
 - ✅ **Talep Sistemi** (İzin, Mesai, Avans talepleri - Hiyerarşik onay sistemi)
+- ✅ **Chronos Module** (Gerçek zamanlı mesai takvimi, zaman çizelgesi yönetimi)
 - ✅ **Türkçe UI** (Merkezi metin yönetimi)
+
+## 🆕 Chronos Module - Mesai Takvimi ve Zaman Yönetimi
+
+**Yeni Özellik:** Sayfa 1061, 535, 565'teki gereksinimlere uygun gelişmiş vardiya ve mesai takvimi yönetim sistemi.
+
+### Ana Özellikler
+- **⏰ 24 Saatlik Timeline:** Geriye veya ileriye saat çekerek aktif personel sayısını görüntüleme
+- **📊 Otomatik Dashboard Güncelleme:** Seçilen saate göre tüm kartlarda aktif personel sayısı güncellenir
+- **🔐 Master Panel Kontrolü:** Birim yöneticileri sadece Master Panel'in belirlediği saatler arasında düzenleme yapabilir
+- **✅ Onay Sistemi:** Vardiya değişikliği için Master Panel'den onay alınması gerekir
+- **⏱️ 30 Dakikalık Yetki:** Onay sonrası yöneticiye 30 dakika düzenleme yetkisi verilir
+- **🔄 Gerçek Zamanlı Sync:** Timeline 10 saniye inaktiviteden sonra gerçek saate döner
+
+### Hızlı Başlangıç
+```bash
+# Prisma client oluştur
+npx prisma generate
+
+# Migration çalıştır
+npx prisma migrate deploy
+
+# Chronos seed data
+npx tsx prisma/seed-chronos.ts
+
+# Development server
+npm run dev
+```
+
+### Kullanım
+**Timeline (Herkes için):**
+1. Mesai Takvimi → Chronos timeline'ı sürükleyin
+2. Farklı saatlerdeki aktif personel sayılarını gözlemleyin
+
+**Birim Yöneticisi:**
+1. "Düzenleme İzni Talep Et" → Saat aralığı ve sebep belirtin
+2. Master Panel onayını bekleyin
+3. Onay gelince 30 dakika vardiya düzenleyin
+
+**Master Panel (SUPER_ADMIN):**
+1. "Master Panel" → Ayarları yapın (min/max saat)
+2. Bekleyen talepleri görün
+3. Onaylayın veya reddedin
+
+### Dokümantasyon
+- **[CHRONOS_INDEX.md](./CHRONOS_INDEX.md)** - Tüm dokümantasyon dosyaları
+- **[CHRONOS_QUICKSTART.md](./CHRONOS_QUICKSTART.md)** - 5 dakikada başla
+- **[CHRONOS_MODULE.md](./CHRONOS_MODULE.md)** - Detaylı özellikler
+- **[CHRONOS_ARCHITECTURE.md](./CHRONOS_ARCHITECTURE.md)** - Sistem mimarisi
+- **[CHRONOS_TESTING.md](./CHRONOS_TESTING.md)** - Test senaryoları
+
+---
 
 ## 🆕 Talep Sistemi (Request System)
 

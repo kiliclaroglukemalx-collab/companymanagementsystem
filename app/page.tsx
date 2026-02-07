@@ -6,6 +6,7 @@ import { motion, AnimatePresence, LayoutGroup, cubicBezier } from "framer-motion
 import { MicroHeader } from "@/components/dashboard/micro-header"
 import { useTheme } from "@/lib/theme-context"
 import { SiteProvider } from "@/lib/site-context"
+import { ChronosProvider } from "@/lib/chronos-context"
 import { HybridBrandSelector } from "@/components/dashboard/hybrid-brand-selector"
 import { SimpleCarousel } from "@/components/dashboard/simple-carousel"
 import { FinancialFlowWidget } from "@/components/dashboard/financial-flow-widget"
@@ -115,18 +116,20 @@ export default function DashboardPage() {
 
   return (
     <SiteProvider initialSite={brands[0]}>
-      <DashboardContent 
-        currentTheme={currentTheme}
-        activeTab={activeTab}
-        handleTabChange={handleTabChange}
-        selectedCard={selectedCard}
-        handleCardClick={handleCardClick}
-        handleCloseExpanded={handleCloseExpanded}
-        isDataWallOpen={isDataWallOpen}
-        lockedBrand={lockedBrand}
-        handleOpenDataWall={handleOpenDataWall}
-        handleCloseDataWall={handleCloseDataWall}
-      />
+      <ChronosProvider>
+        <DashboardContent 
+          currentTheme={currentTheme}
+          activeTab={activeTab}
+          handleTabChange={handleTabChange}
+          selectedCard={selectedCard}
+          handleCardClick={handleCardClick}
+          handleCloseExpanded={handleCloseExpanded}
+          isDataWallOpen={isDataWallOpen}
+          lockedBrand={lockedBrand}
+          handleOpenDataWall={handleOpenDataWall}
+          handleCloseDataWall={handleCloseDataWall}
+        />
+      </ChronosProvider>
     </SiteProvider>
   )
 }

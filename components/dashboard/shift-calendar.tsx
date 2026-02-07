@@ -24,8 +24,12 @@ import {
 } from "lucide-react"
 import { brands, type Brand } from "@/lib/dashboard-data"
 import { useSite } from "@/lib/site-context"
+import { useChronos } from "@/lib/chronos-context"
+import { useEditingPermissionSync } from "@/lib/use-editing-permission-sync"
 import { CreateRequestForm } from "./create-request-form"
 import { RequestManagement } from "./request-management"
+import { MasterPanelSettingsModal } from "./master-panel-settings-modal"
+import { ShiftApprovalRequestModal } from "./shift-approval-request-modal"
 
 // Chronos Module Color Palette
 const COLORS = {
@@ -182,24 +186,35 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false)
   const [isRequestManagementOpen, setIsRequestManagementOpen] = useState(false)
   const [requestManagementView, setRequestManagementView] = useState<"my-requests" | "to-approve">("my-requests")
+  const [isMasterPanelOpen, setIsMasterPanelOpen] = useState(false)
+  const [isApprovalRequestOpen, setIsApprovalRequestOpen] = useState(false)
+  
+  // Chronos context integration
+  const chronos = useChronos()
+  const { 
+    selectedHour, 
+    setSelectedHour, 
+    realHour,
+    updateActivePersonnelCount,
+    updateDepartmentActiveCount,
+    countdown,
+    setCountdown,
+    editingPermission,
+  } = chronos
+  
+  // Sync editing permission with server
+  useEditingPermissionSync(10000) // Check every 10 seconds
   
   // Timeline state
   const [isDragging, setIsDragging] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
   const [springBackTimer, setSpringBackTimer] = useState<NodeJS.Timeout | null>(null)
-  const [countdown, setCountdown] = useState(0)
   const timelineRef = useRef<HTMLDivElement>(null)
-  
-  // Real current hour
-  const [realHour, setRealHour] = useState(() => new Date().getHours())
   
   // Motion values for spring animation
   const timelineX = useMotionValue(0)
   const springX = useSpring(timelineX, { stiffness: 300, damping: 30 })
-  
-  // Selected hour based on drag position
-  const [selectedHour, setSelectedHour] = useState(realHour)
   
   // Brand and Department selection
   const { selectedSite: selectedBrand, setSelectedSite: setSelectedBrand } = useSite()
@@ -207,13 +222,13 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
   const [isBrandSearchOpen, setIsBrandSearchOpen] = useState(false)
   const [brandSearchQuery, setBrandSearchQuery] = useState("")
 
-  // Update real time
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setRealHour(new Date().getHours())
-    }, 60000)
-    return () => clearInterval(timer)
-  }, [])
+  // Update real time - removed, now managed by Chronos context
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setRealHour(new Date().getHours())
+  //   }, 60000)
+  //   return () => clearInterval(timer)
+  // }, [])
 
   // Filter staff based on selected hour
   const activeStaff = useMemo(() => {
@@ -226,11 +241,26 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
     })
   }, [selectedHour])
 
-  // Filter by department
+  // Update Chronos context with active personnel count
+  useEffect(() => {
+    updateActivePersonnelCount(activeStaff.length)
+  }, [activeStaff.length, updateActivePersonnelCount])
+
+  // Filter by department and update department active count
   const departmentStaff = useMemo(() => {
     if (!expandedDept) return activeStaff
-    return activeStaff.filter(person => person.department === expandedDept)
-  }, [activeStaff, expandedDept])
+    const filtered = activeStaff.filter(person => person.department === expandedDept)
+    updateDepartmentActiveCount(expandedDept, filtered.length)
+    return filtered
+  }, [activeStaff, expandedDept, updateDepartmentActiveCount])
+
+  // Update department counts for all departments
+  useEffect(() => {
+    departments.forEach(dept => {
+      const count = activeStaff.filter(p => p.department === dept.id).length
+      updateDepartmentActiveCount(dept.id, count)
+    })
+  }, [activeStaff, updateDepartmentActiveCount])
 
   const totalPersonnel = useMemo(() => {
     return mockWeekData.reduce((acc, day) => {
@@ -931,11 +961,60 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
                     </span>
                   )}
                 </motion.button>
+
+                {/* Shift Approval Request Button */}
+                <motion.button
+                  className="flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[14px] font-medium transition-all"
+                  style={{
+                    background: editingPermission.hasPermission 
+                      ? `${COLORS.electricBlue}20`
+                      : COLORS.glass,
+                    border: editingPermission.hasPermission
+                      ? `1px solid ${COLORS.electricBlue}`
+                      : `1px solid ${COLORS.glassBorder}`,
+                    color: editingPermission.hasPermission 
+                      ? COLORS.electricBlue
+                      : COLORS.goldLight,
+                  }}
+                  whileHover={{ borderColor: COLORS.champagneGold }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsApprovalRequestOpen(true)}
+                >
+                  <Clock className="w-4 h-4" />
+                  {editingPermission.hasPermission ? (
+                    <>
+                      Düzenleme Aktif
+                      {editingPermission.expiresAt && (
+                        <span className="ml-1 text-[11px] font-bold">
+                          ({Math.ceil((editingPermission.expiresAt.getTime() - Date.now()) / 60000)}dk)
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    "Düzenleme İzni Talep Et"
+                  )}
+                </motion.button>
+
+                {/* Master Panel Settings (Super Admin Only) */}
+                <motion.button
+                  className="flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[14px] font-medium transition-all"
+                  style={{
+                    background: `${COLORS.champagneGold}20`,
+                    border: `1px solid ${COLORS.champagneGold}`,
+                    color: COLORS.champagneGold,
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsMasterPanelOpen(true)}
+                >
+                  <Zap className="w-4 h-4" />
+                  Master Panel
+                </motion.button>
               </>
             )}
 
             {/* Add Shift Button */}
-            {isManager && (
+            {isManager && editingPermission.hasPermission && (
               <motion.button
                 className="flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[14px] font-bold transition-all"
                 style={{
@@ -1328,6 +1407,21 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Master Panel Settings Modal */}
+      <MasterPanelSettingsModal
+        isOpen={isMasterPanelOpen}
+        onClose={() => setIsMasterPanelOpen(false)}
+      />
+
+      {/* Shift Approval Request Modal */}
+      <ShiftApprovalRequestModal
+        isOpen={isApprovalRequestOpen}
+        onClose={() => setIsApprovalRequestOpen(false)}
+        onSuccess={() => {
+          // Refresh or show success notification
+        }}
+      />
     </section>
   )
 }
