@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { basePrisma as prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { verifySessionToken, AUTH_COOKIE } from "@/lib/auth"
 
