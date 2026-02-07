@@ -14,43 +14,43 @@ enum UserRole {
 }
 
 model Site {
-  id              String            @id @default(cuid())
-  name            String            @unique
-  users           User[]
-  departments     Department[]
-  securityEvents  SecurityEvent[]
-  trustedIps      TrustedIp[]
-  arenaEvents     ArenaEvent[]
-  ratings         Rating[]
-  monthlyScores   MonthlyScore[]
-  leagueRankings  LeagueRanking[]
-  monthlyChampions MonthlyChampion[]
-  dataUploads     DataUpload[]
-  financialFlows  FinancialFlow[]
-  aiAnalyses      AIAnalysis[]
-  targetedAnnouncements Announcement[] @relation("AnnouncementTargetSite")
+  id                    String                 @id @default(cuid())
+  name                  String                 @unique
+  users                 User[]
+  departments           Department[]
+  securityEvents        SecurityEvent[]
+  trustedIps            TrustedIp[]
+  arenaEvents           ArenaEvent[]
+  ratings               Rating[]
+  monthlyScores         MonthlyScore[]
+  leagueRankings        LeagueRanking[]
+  monthlyChampions      MonthlyChampion[]
+  dataUploads           DataUpload[]
+  financialFlows        FinancialFlow[]
+  aiAnalyses            AIAnalysis[]
+  targetedAnnouncements Announcement[]         @relation("AnnouncementTargetSite")
   shiftApprovalRequests ShiftApprovalRequest[] @relation("ShiftApprovalRequests")
-  masterPanelSettings MasterPanelSettings? @relation("MasterPanelSettings")
-  shiftDefinitions ShiftDefinition[] @relation("ShiftDefinitions")
-  shifts          Shift[]           @relation("Shifts")
-  createdAt       DateTime          @default(now())
+  masterPanelSettings   MasterPanelSettings?   @relation("MasterPanelSettings")
+  shiftDefinitions      ShiftDefinition[]      @relation("ShiftDefinitions")
+  shifts                Shift[]                @relation("Shifts")
+  createdAt             DateTime               @default(now())
 }
 
 model Department {
-  id              String            @id @default(cuid())
-  siteId          String
-  name            String
-  site            Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  users           User[]
-  ratingCriteria  RatingCriteria[]
-  ratings         Rating[]
-  monthlyScores   MonthlyScore[]
-  leagueRankings  LeagueRanking[]
-  monthlyChampions MonthlyChampion[]
-  targetedAnnouncements Announcement[] @relation("AnnouncementTargetDepartment")
+  id                    String                 @id @default(cuid())
+  siteId                String
+  name                  String
+  site                  Site                   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  users                 User[]
+  ratingCriteria        RatingCriteria[]
+  ratings               Rating[]
+  monthlyScores         MonthlyScore[]
+  leagueRankings        LeagueRanking[]
+  monthlyChampions      MonthlyChampion[]
+  targetedAnnouncements Announcement[]         @relation("AnnouncementTargetDepartment")
   shiftApprovalRequests ShiftApprovalRequest[] @relation("ShiftApprovalRequests")
-  shifts          Shift[]           @relation("Shifts")
-  createdAt       DateTime          @default(now())
+  shifts                Shift[]                @relation("Shifts")
+  createdAt             DateTime               @default(now())
 
   @@unique([siteId, name])
   @@index([siteId])
@@ -74,23 +74,23 @@ model User {
   createdBy    User?  @relation("UserCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers User[] @relation("UserCreatedBy")
 
-  passwordCredential PasswordCredential?
-  security           UserSecurity?
-  sessions           Session[]
-  securityEvents     SecurityEvent[]
-  ratingsGiven       Rating[]            @relation("RatingsGiven")
-  ratingsReceived    Rating[]            @relation("RatingsReceived")
-  monthlyScores      MonthlyScore[]
-  leagueRankings     LeagueRanking[]
-  monthlyChampions   MonthlyChampion[]
-  requestsMade       Request[]           @relation("RequestedBy")
-  requestsToApprove  Request[]           @relation("Approver")
-  salary             UserSalary?
+  passwordCredential    PasswordCredential?
+  security              UserSecurity?
+  sessions              Session[]
+  securityEvents        SecurityEvent[]
+  ratingsGiven          Rating[]               @relation("RatingsGiven")
+  ratingsReceived       Rating[]               @relation("RatingsReceived")
+  monthlyScores         MonthlyScore[]
+  leagueRankings        LeagueRanking[]
+  monthlyChampions      MonthlyChampion[]
+  requestsMade          Request[]              @relation("RequestedBy")
+  requestsToApprove     Request[]              @relation("Approver")
+  salary                UserSalary?
   shiftApprovalRequests ShiftApprovalRequest[] @relation("ShiftApprovalRequests")
-  shiftApprovalsGiven ShiftApprovalRequest[] @relation("ShiftApprovalsGiven")
-  assignedShifts     Shift[]             @relation("AssignedShifts")
-  shiftModifications Shift[]             @relation("ShiftModifications")
-  createdAt          DateTime            @default(now())
+  shiftApprovalsGiven   ShiftApprovalRequest[] @relation("ShiftApprovalsGiven")
+  assignedShifts        Shift[]                @relation("AssignedShifts")
+  shiftModifications    Shift[]                @relation("ShiftModifications")
+  createdAt             DateTime               @default(now())
 
   @@index([siteId])
   @@index([departmentId])
@@ -157,13 +157,13 @@ model TrustedIp {
 }
 
 model RatingCriteria {
-  id           String        @id @default(cuid())
+  id           String   @id @default(cuid())
   departmentId String
   name         String
-  weight       Int           @default(0)
-  isActive     Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  weight       Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   department   Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   ratingScores RatingScore[]
@@ -174,20 +174,20 @@ model RatingCriteria {
 
 // Günlük puanlama kaydı
 model Rating {
-  id           String        @id @default(cuid())
+  id           String   @id @default(cuid())
   siteId       String
   departmentId String
-  raterUserId  String        // Puan veren
-  ratedUserId  String        // Puan alan
-  date         String        // YYYY-MM-DD format
-  totalScore   Float?        // Toplam puan (hesaplanmış)
-  createdAt    DateTime      @default(now())
+  raterUserId  String // Puan veren
+  ratedUserId  String // Puan alan
+  date         String // YYYY-MM-DD format
+  totalScore   Float? // Toplam puan (hesaplanmış)
+  createdAt    DateTime @default(now())
 
-  site         Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  department   Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  rater        User          @relation("RatingsGiven", fields: [raterUserId], references: [id], onDelete: Cascade)
-  rated        User          @relation("RatingsReceived", fields: [ratedUserId], references: [id], onDelete: Cascade)
-  scores       RatingScore[]
+  site       Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  department Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  rater      User          @relation("RatingsGiven", fields: [raterUserId], references: [id], onDelete: Cascade)
+  rated      User          @relation("RatingsReceived", fields: [ratedUserId], references: [id], onDelete: Cascade)
+  scores     RatingScore[]
 
   @@unique([raterUserId, ratedUserId, date]) // Aynı gün aynı kişiyi 2 kere puanlayamaz
   @@index([siteId])
@@ -201,7 +201,7 @@ model RatingScore {
   id         String   @id @default(cuid())
   ratingId   String
   criteriaId String
-  score      Int      // 1-10 arası
+  score      Int // 1-10 arası
   createdAt  DateTime @default(now())
 
   rating   Rating         @relation(fields: [ratingId], references: [id], onDelete: Cascade)
@@ -238,16 +238,16 @@ model ArenaEvent {
 
 // Arena Lig Kategorileri
 enum LeagueCategory {
-  USTAT          // %1
-  ELMAS_1        // %1-5
-  ELMAS_2        // %5-10
-  ALTIN_1        // %10-20
-  ALTIN_2        // %20-30
-  GUMUS_1        // %30-40
-  GUMUS_2        // %40-50
-  BRONZ_1        // %50-60
-  BRONZ_2        // %60-70
-  DEMIR          // %70+
+  USTAT // %1
+  ELMAS_1 // %1-5
+  ELMAS_2 // %5-10
+  ALTIN_1 // %10-20
+  ALTIN_2 // %20-30
+  GUMUS_1 // %30-40
+  GUMUS_2 // %40-50
+  BRONZ_1 // %50-60
+  BRONZ_2 // %60-70
+  DEMIR // %70+
 }
 
 // Kullanıcı Tipi (Personel, Admin, Birim Müdürü, Genel Müdür)
@@ -260,17 +260,17 @@ enum PersonelType {
 
 // Aylık kümülatif puanlama - Her ay sıfırlanır
 model MonthlyScore {
-  id           String      @id @default(cuid())
+  id           String       @id @default(cuid())
   userId       String
   siteId       String
   departmentId String
   personelType PersonelType @default(PERSONEL)
-  month        String      // YYYY-MM format
-  totalScore   Float       @default(0)
-  ratingCount  Int         @default(0)
+  month        String // YYYY-MM format
+  totalScore   Float        @default(0)
+  ratingCount  Int          @default(0)
   lastRatedAt  DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   site       Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
@@ -289,11 +289,11 @@ model LeagueRanking {
   siteId       String
   departmentId String
   personelType PersonelType   @default(PERSONEL)
-  month        String         // YYYY-MM format
+  month        String // YYYY-MM format
   category     LeagueCategory
-  rank         Int            // Kategori içinde sıra
+  rank         Int // Kategori içinde sıra
   totalScore   Float
-  percentage   Float          // Yüzdelik dilim
+  percentage   Float // Yüzdelik dilim
   updatedAt    DateTime       @updatedAt
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -313,9 +313,9 @@ model MonthlyChampion {
   siteId       String
   departmentId String
   personelType PersonelType
-  month        String         // YYYY-MM format
+  month        String // YYYY-MM format
   category     LeagueCategory
-  rank         Int            // Kategori içinde kaçıncı
+  rank         Int // Kategori içinde kaçıncı
   totalScore   Float
   createdAt    DateTime       @default(now())
 
@@ -352,23 +352,23 @@ enum UploadStatus {
 
 // Veri Yükleme Kaydı
 model DataUpload {
-  id              String          @id @default(cuid())
+  id              String         @id @default(cuid())
   siteId          String
   uploadedByEmail String
   fileName        String
   fileType        DataFileType
   analyticModule  AnalyticModule
   fileSize        Int
-  status          UploadStatus    @default(PENDING)
+  status          UploadStatus   @default(PENDING)
   processedAt     DateTime?
   errorMessage    String?
-  metaData        Json?           // Extra data from upload
-  createdAt       DateTime        @default(now())
-  
-  site            Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  financialFlows  FinancialFlow[]
-  aiAnalyses      AIAnalysis[]
-  
+  metaData        Json? // Extra data from upload
+  createdAt       DateTime       @default(now())
+
+  site           Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  financialFlows FinancialFlow[]
+  aiAnalyses     AIAnalysis[]
+
   @@index([siteId])
   @@index([status])
   @@index([createdAt])
@@ -376,23 +376,23 @@ model DataUpload {
 
 // Para Nasıl Akıyor? - Financial Flow Data
 model FinancialFlow {
-  id              String      @id @default(cuid())
-  siteId          String
-  dataUploadId    String?
-  date            DateTime    // Tarih
-  totalIncome     Float       @default(0)  // Toplam Gelir
-  bankFees        Float       @default(0)  // Banka Kesintisi
-  withdrawals     Float       @default(0)  // Çekim
-  operatingCosts  Float       @default(0)  // İşletme Gideri
-  netProfit       Float       @default(0)  // Net Kazanç (hesaplanmış)
-  cumulativeProfit Float      @default(0)  // Kümülatif Kazanç
-  month           String      // YYYY-MM format
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  site            Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  dataUpload      DataUpload?  @relation(fields: [dataUploadId], references: [id], onDelete: SetNull)
-  
+  id               String   @id @default(cuid())
+  siteId           String
+  dataUploadId     String?
+  date             DateTime // Tarih
+  totalIncome      Float    @default(0) // Toplam Gelir
+  bankFees         Float    @default(0) // Banka Kesintisi
+  withdrawals      Float    @default(0) // Çekim
+  operatingCosts   Float    @default(0) // İşletme Gideri
+  netProfit        Float    @default(0) // Net Kazanç (hesaplanmış)
+  cumulativeProfit Float    @default(0) // Kümülatif Kazanç
+  month            String // YYYY-MM format
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  site       Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  dataUpload DataUpload? @relation(fields: [dataUploadId], references: [id], onDelete: SetNull)
+
   @@unique([siteId, date])
   @@index([siteId, month])
   @@index([date])
@@ -400,21 +400,21 @@ model FinancialFlow {
 
 // AI Analyst - Yapay Zeka Analiz Raporları
 model AIAnalysis {
-  id              String      @id @default(cuid())
-  siteId          String
-  dataUploadId    String?
-  analyticModule  AnalyticModule
-  analysisDate    DateTime    @default(now())
-  prompt          String      @db.Text  // LLM'e gönderilen prompt
-  response        String      @db.Text  // LLM'den gelen analiz
-  tokensUsed      Int?        // Kullanılan token sayısı
-  model           String      @default("gpt-4") // Kullanılan AI model
-  isPublished     Boolean     @default(false) // Ana sayfada gösterilsin mi?
-  createdAt       DateTime    @default(now())
-  
-  site            Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  dataUpload      DataUpload? @relation(fields: [dataUploadId], references: [id], onDelete: SetNull)
-  
+  id             String         @id @default(cuid())
+  siteId         String
+  dataUploadId   String?
+  analyticModule AnalyticModule
+  analysisDate   DateTime       @default(now())
+  prompt         String         @db.Text // LLM'e gönderilen prompt
+  response       String         @db.Text // LLM'den gelen analiz
+  tokensUsed     Int? // Kullanılan token sayısı
+  model          String         @default("gpt-4") // Kullanılan AI model
+  isPublished    Boolean        @default(false) // Ana sayfada gösterilsin mi?
+  createdAt      DateTime       @default(now())
+
+  site       Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  dataUpload DataUpload? @relation(fields: [dataUploadId], references: [id], onDelete: SetNull)
+
   @@index([siteId])
   @@index([analyticModule])
   @@index([isPublished])
@@ -429,52 +429,52 @@ enum AnnouncementSeverity {
 }
 
 enum AnnouncementTargetType {
-  ALL             // Tüm kullanıcılar
-  ADMIN_ONLY      // Sadece adminler
-  STAFF_ONLY      // Sadece personel
-  SITE_SPECIFIC   // Belirli site
-  DEPARTMENT_SPECIFIC  // Belirli birim
-  ROLE_SPECIFIC   // Belirli rol
+  ALL // Tüm kullanıcılar
+  ADMIN_ONLY // Sadece adminler
+  STAFF_ONLY // Sadece personel
+  SITE_SPECIFIC // Belirli site
+  DEPARTMENT_SPECIFIC // Belirli birim
+  ROLE_SPECIFIC // Belirli rol
 }
 
 enum DisplayMode {
-  ONCE            // Bir kez göster
-  EVERY_LOGIN     // Her giriş
-  DAILY           // Günlük
+  ONCE // Bir kez göster
+  EVERY_LOGIN // Her giriş
+  DAILY // Günlük
 }
 
 model Announcement {
-  id              String                  @id @default(cuid())
-  title           String
-  content         String                  @db.Text
-  severity        AnnouncementSeverity    @default(INFO)
-  targetType      AnnouncementTargetType  @default(ALL)
-  
+  id         String                 @id @default(cuid())
+  title      String
+  content    String                 @db.Text
+  severity   AnnouncementSeverity   @default(INFO)
+  targetType AnnouncementTargetType @default(ALL)
+
   // Hedef filtreleme
-  targetSiteId       String?              // Sadece bu site için (null = tüm siteler)
-  targetDepartmentId String?              // Sadece bu birim için (null = tüm birimler)
-  targetRole         UserRole?            // Sadece bu rol için (null = tüm roller)
-  
+  targetSiteId       String? // Sadece bu site için (null = tüm siteler)
+  targetDepartmentId String? // Sadece bu birim için (null = tüm birimler)
+  targetRole         UserRole? // Sadece bu rol için (null = tüm roller)
+
   // Görüntüleme ayarları
-  showAsPopup     Boolean                 @default(false)  // Ana sayfada popup olarak çıksın mı?
-  displayMode     DisplayMode             @default(ONCE)   // Gösterim modu
-  activeDays      String[]                @default([])     // Aktif günler: ["Pzt", "Sal", "Car", "Per", "Cum", "Cmt", "Paz"]
-  removeOnRead    Boolean                 @default(true)   // Okunduğunda kaldırılsın mı?
-  
+  showAsPopup  Boolean     @default(false) // Ana sayfada popup olarak çıksın mı?
+  displayMode  DisplayMode @default(ONCE) // Gösterim modu
+  activeDays   String[]    @default([]) // Aktif günler: ["Pzt", "Sal", "Car", "Per", "Cum", "Cmt", "Paz"]
+  removeOnRead Boolean     @default(true) // Okunduğunda kaldırılsın mı?
+
   // Geçerlilik
-  isActive        Boolean                 @default(true)
-  expiresAt       DateTime?               // Son kullanma tarihi
-  
+  isActive  Boolean   @default(true)
+  expiresAt DateTime? // Son kullanma tarihi
+
   // Meta
   createdByUserId String
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
   // İlişkiler
-  targetSite      Site?                   @relation("AnnouncementTargetSite", fields: [targetSiteId], references: [id], onDelete: Cascade)
-  targetDepartment Department?            @relation("AnnouncementTargetDepartment", fields: [targetDepartmentId], references: [id], onDelete: Cascade)
-  readRecords     AnnouncementRead[]
-  
+  targetSite       Site?              @relation("AnnouncementTargetSite", fields: [targetSiteId], references: [id], onDelete: Cascade)
+  targetDepartment Department?        @relation("AnnouncementTargetDepartment", fields: [targetDepartmentId], references: [id], onDelete: Cascade)
+  readRecords      AnnouncementRead[]
+
   @@index([isActive])
   @@index([targetType])
   @@index([targetSiteId])
@@ -484,13 +484,13 @@ model Announcement {
 
 // Duyuru okunma kaydı
 model AnnouncementRead {
-  id              String       @id @default(cuid())
-  announcementId  String
-  userId          String
-  readAt          DateTime     @default(now())
-  
-  announcement    Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  
+  id             String   @id @default(cuid())
+  announcementId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
   @@unique([announcementId, userId])
   @@index([announcementId])
   @@index([userId])
@@ -499,66 +499,66 @@ model AnnouncementRead {
 
 // Kullanıcı bildirim tercihleri
 model UserNotificationPreference {
-  userId                    String   @id
-  disableInfoNotifications  Boolean  @default(false)  // Bilgi bildirimleri kapalı
-  disableWarningNotifications Boolean @default(false) // Uyarı bildirimleri kapalı
-  disablePopups             Boolean  @default(false)  // Popup'ları kapat
-  updatedAt                 DateTime @updatedAt
+  userId                      String   @id
+  disableInfoNotifications    Boolean  @default(false) // Bilgi bildirimleri kapalı
+  disableWarningNotifications Boolean  @default(false) // Uyarı bildirimleri kapalı
+  disablePopups               Boolean  @default(false) // Popup'ları kapat
+  updatedAt                   DateTime @updatedAt
 }
 
 // Talep Sistemi - Request System
 
 // Talep Türleri
 enum RequestType {
-  LEAVE        // İzin talebi
-  OVERTIME     // Mesai talebi
-  ADVANCE      // Avans talebi
+  LEAVE // İzin talebi
+  OVERTIME // Mesai talebi
+  ADVANCE // Avans talebi
 }
 
 // Talep Durumu
 enum RequestStatus {
-  PENDING      // Beklemede
-  APPROVED     // Onaylandı
-  REJECTED     // Reddedildi
-  CANCELLED    // İptal edildi
+  PENDING // Beklemede
+  APPROVED // Onaylandı
+  REJECTED // Reddedildi
+  CANCELLED // İptal edildi
 }
 
 // İzin/Mesai Türleri
 enum LeaveType {
-  ANNUAL       // Yıllık izin
-  SICK         // Sağlık izni
-  PERSONAL     // Kişisel izin
-  OVERTIME     // Mesai
+  ANNUAL // Yıllık izin
+  SICK // Sağlık izni
+  PERSONAL // Kişisel izin
+  OVERTIME // Mesai
 }
 
 // Ana Talep Modeli
 model Request {
-  id                String        @id @default(cuid())
-  type              RequestType
-  status            RequestStatus @default(PENDING)
-  
+  id     String        @id @default(cuid())
+  type   RequestType
+  status RequestStatus @default(PENDING)
+
   // Talep eden kişi
-  requestedById     String
-  requestedBy       User          @relation("RequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
-  
+  requestedById String
+  requestedBy   User   @relation("RequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+
   // Onaylayacak kişi (Birim Müdürü veya Finans Müdürü)
-  approverId        String?
-  approver          User?         @relation("Approver", fields: [approverId], references: [id], onDelete: SetNull)
-  
+  approverId String?
+  approver   User?   @relation("Approver", fields: [approverId], references: [id], onDelete: SetNull)
+
   // Onay/Red bilgileri
-  approvedAt        DateTime?
-  rejectedAt        DateTime?
-  rejectionReason   String?       @db.Text
-  
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?   @db.Text
+
   // Genel bilgiler
-  reason            String        @db.Text
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
+  reason    String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Alt detaylar (polymorphic ilişki)
-  leaveRequest      LeaveRequest?
-  advanceRequest    AdvanceRequest?
-  
+  leaveRequest   LeaveRequest?
+  advanceRequest AdvanceRequest?
+
   @@index([requestedById])
   @@index([approverId])
   @@index([status])
@@ -568,56 +568,56 @@ model Request {
 
 // İzin/Mesai Talebi Detayları
 model LeaveRequest {
-  id          String    @id @default(cuid())
-  requestId   String    @unique
-  request     Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  
-  leaveType   LeaveType
-  startDate   DateTime  // Başlangıç tarihi
-  endDate     DateTime  // Bitiş tarihi
-  days        Int       // Gün sayısı
-  
+  id        String  @id @default(cuid())
+  requestId String  @unique
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  leaveType LeaveType
+  startDate DateTime // Başlangıç tarihi
+  endDate   DateTime // Bitiş tarihi
+  days      Int // Gün sayısı
+
   // Mesai takvimine otomatik yansıtma için
-  isReflectedToCalendar Boolean @default(false)
+  isReflectedToCalendar Boolean   @default(false)
   reflectedAt           DateTime?
-  
-  createdAt   DateTime  @default(now())
-  
+
+  createdAt DateTime @default(now())
+
   @@index([requestId])
   @@index([startDate])
 }
 
 // Avans Talebi Detayları
 model AdvanceRequest {
-  id          String    @id @default(cuid())
-  requestId   String    @unique
-  request     Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  
-  amount      Float     // Talep edilen miktar
-  userSalary  Float     // Kullanıcının kayıtlı maaşı (kontrol için)
-  
+  id        String  @id @default(cuid())
+  requestId String  @unique
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  amount     Float // Talep edilen miktar
+  userSalary Float // Kullanıcının kayıtlı maaşı (kontrol için)
+
   // Ödeme bilgileri (onaylandıysa)
-  isPaid      Boolean   @default(false)
-  paidAt      DateTime?
-  paidBy      String?   // Ödemeyi yapan kişi
-  
-  createdAt   DateTime  @default(now())
-  
+  isPaid Boolean   @default(false)
+  paidAt DateTime?
+  paidBy String? // Ödemeyi yapan kişi
+
+  createdAt DateTime @default(now())
+
   @@index([requestId])
 }
 
 // Kullanıcı maaş bilgisi (Avans kontrolü için)
 model UserSalary {
-  id          String    @id @default(cuid())
-  userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  monthlySalary Float   // Aylık maaş
-  currency      String  @default("TRY")
-  
-  updatedAt   DateTime  @updatedAt
-  createdAt   DateTime  @default(now())
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  monthlySalary Float // Aylık maaş
+  currency      String @default("TRY")
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
   @@index([userId])
 }
 
@@ -634,30 +634,30 @@ enum ShiftApprovalStatus {
 }
 
 model ShiftApprovalRequest {
-  id                  String               @id @default(cuid())
-  requestedById       String
-  requestedBy         User                 @relation("ShiftApprovalRequests", fields: [requestedById], references: [id], onDelete: Cascade)
-  
-  siteId              String
-  site                Site                 @relation("ShiftApprovalRequests", fields: [siteId], references: [id], onDelete: Cascade)
-  
-  departmentId        String?
-  department          Department?          @relation("ShiftApprovalRequests", fields: [departmentId], references: [id], onDelete: SetNull)
-  
-  reason              String               @db.Text
-  requestedStartHour  Int                  // Düzenlenmek istenen başlangıç saati (0-23)
-  requestedEndHour    Int                  // Düzenlenmek istenen bitiş saati (0-23)
-  
-  status              ShiftApprovalStatus  @default(PENDING)
-  
-  approvedById        String?
-  approvedBy          User?                @relation("ShiftApprovalsGiven", fields: [approvedById], references: [id], onDelete: SetNull)
-  approvedAt          DateTime?
-  expiresAt           DateTime?            // Onay süresi (30 dakika)
-  
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  
+  id            String @id @default(cuid())
+  requestedById String
+  requestedBy   User   @relation("ShiftApprovalRequests", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  siteId String
+  site   Site   @relation("ShiftApprovalRequests", fields: [siteId], references: [id], onDelete: Cascade)
+
+  departmentId String?
+  department   Department? @relation("ShiftApprovalRequests", fields: [departmentId], references: [id], onDelete: SetNull)
+
+  reason             String @db.Text
+  requestedStartHour Int // Düzenlenmek istenen başlangıç saati (0-23)
+  requestedEndHour   Int // Düzenlenmek istenen bitiş saati (0-23)
+
+  status ShiftApprovalStatus @default(PENDING)
+
+  approvedById String?
+  approvedBy   User?     @relation("ShiftApprovalsGiven", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt   DateTime?
+  expiresAt    DateTime? // Onay süresi (30 dakika)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([requestedById])
   @@index([siteId])
   @@index([status])
@@ -666,75 +666,77 @@ model ShiftApprovalRequest {
 
 // Master Panel Ayarları - Chronos Global Settings
 model MasterPanelSettings {
-  id                      String   @id @default(cuid())
-  siteId                  String   @unique
-  site                    Site     @relation("MasterPanelSettings", fields: [siteId], references: [id], onDelete: Cascade)
-  
-  minEditableHour         Int      @default(6)   // En erken düzenlenebilir saat (örn: 06:00)
-  maxEditableHour         Int      @default(23)  // En geç düzenlenebilir saat (örn: 23:00)
-  requiresApproval        Boolean  @default(true) // Vardiya değişikliği için onay gerekli mi?
-  editingDurationMinutes  Int      @default(30)  // Onay sonrası düzenleme süresi (dakika)
-  
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  
+  id     String @id @default(cuid())
+  siteId String @unique
+  site   Site   @relation("MasterPanelSettings", fields: [siteId], references: [id], onDelete: Cascade)
+
+  minEditableHour        Int     @default(6) // En erken düzenlenebilir saat (örn: 06:00)
+  maxEditableHour        Int     @default(23) // En geç düzenlenebilir saat (örn: 23:00)
+  requiresApproval       Boolean @default(true) // Vardiya değişikliği için onay gerekli mi?
+  editingDurationMinutes Int     @default(30) // Onay sonrası düzenleme süresi (dakika)
+
+  // Güvenlik Ayarları
+  sessionTimeoutMinutes Int @default(60) // Oturum zaman aşımı süresi (dakika)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([siteId])
 }
 
 // Vardiya Tanımları - Shift Definitions
 model ShiftDefinition {
-  id          String         @id @default(cuid())
-  siteId      String
-  site        Site           @relation("ShiftDefinitions", fields: [siteId], references: [id], onDelete: Cascade)
-  
-  name        String         // Vardiya adı (örn: Sabah, Öğle, Gece)
-  startHour   Int            // Başlangıç saati (0-23)
-  endHour     Int            // Bitiş saati (0-23)
-  color       String         // Renk kodu (#hex)
-  isActive    Boolean        @default(true)
-  
-  shifts      Shift[]
-  
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation("ShiftDefinitions", fields: [siteId], references: [id], onDelete: Cascade)
+
+  name      String // Vardiya adı (örn: Sabah, Öğle, Gece)
+  startHour Int // Başlangıç saati (0-23)
+  endHour   Int // Bitiş saati (0-23)
+  color     String // Renk kodu (#hex)
+  isActive  Boolean @default(true)
+
+  shifts Shift[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([siteId, name])
   @@index([siteId])
 }
 
 // Vardiya Atamaları - Shift Assignments
 model Shift {
-  id                  String           @id @default(cuid())
-  siteId              String
-  site                Site             @relation("Shifts", fields: [siteId], references: [id], onDelete: Cascade)
-  
-  departmentId        String
-  department          Department       @relation("Shifts", fields: [departmentId], references: [id], onDelete: Cascade)
-  
-  shiftDefinitionId   String
-  shiftDefinition     ShiftDefinition  @relation(fields: [shiftDefinitionId], references: [id], onDelete: Cascade)
-  
-  userId              String
-  user                User             @relation("AssignedShifts", fields: [userId], references: [id], onDelete: Cascade)
-  
-  date                DateTime         // Vardiya tarihi
-  startTime           DateTime         // Başlangıç zamanı
-  endTime             DateTime         // Bitiş zamanı
-  
-  isActive            Boolean          @default(true)
-  
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation("Shifts", fields: [siteId], references: [id], onDelete: Cascade)
+
+  departmentId String
+  department   Department @relation("Shifts", fields: [departmentId], references: [id], onDelete: Cascade)
+
+  shiftDefinitionId String
+  shiftDefinition   ShiftDefinition @relation(fields: [shiftDefinitionId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("AssignedShifts", fields: [userId], references: [id], onDelete: Cascade)
+
+  date      DateTime // Vardiya tarihi
+  startTime DateTime // Başlangıç zamanı
+  endTime   DateTime // Bitiş zamanı
+
+  isActive Boolean @default(true)
+
   // Değişiklik takibi
-  lastModifiedById    String?
-  lastModifiedBy      User?            @relation("ShiftModifications", fields: [lastModifiedById], references: [id], onDelete: SetNull)
-  lastModifiedAt      DateTime?
-  
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  
+  lastModifiedById String?
+  lastModifiedBy   User?     @relation("ShiftModifications", fields: [lastModifiedById], references: [id], onDelete: SetNull)
+  lastModifiedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([siteId])
   @@index([departmentId])
   @@index([userId])
   @@index([date])
   @@index([shiftDefinitionId])
 }
-

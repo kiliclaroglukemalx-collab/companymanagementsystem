@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
           maxEditableHour: 23,
           requiresApproval: true,
           editingDurationMinutes: 30,
+          sessionTimeoutMinutes: 60,
         },
       })
     }
@@ -70,7 +71,7 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    const { minEditableHour, maxEditableHour, requiresApproval, editingDurationMinutes } =
+    const { minEditableHour, maxEditableHour, requiresApproval, editingDurationMinutes, sessionTimeoutMinutes } =
       await req.json()
 
     const settings = await prisma.masterPanelSettings.upsert({
@@ -82,6 +83,7 @@ export async function PUT(req: NextRequest) {
         maxEditableHour,
         requiresApproval,
         editingDurationMinutes,
+        sessionTimeoutMinutes,
       },
       create: {
         siteId: user.siteId,
@@ -89,6 +91,7 @@ export async function PUT(req: NextRequest) {
         maxEditableHour,
         requiresApproval,
         editingDurationMinutes,
+        sessionTimeoutMinutes: sessionTimeoutMinutes || 60,
       },
     })
 

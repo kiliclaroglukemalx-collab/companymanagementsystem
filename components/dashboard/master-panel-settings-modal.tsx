@@ -35,6 +35,7 @@ export function MasterPanelSettingsModal({ isOpen, onClose }: MasterPanelSetting
     maxEditableHour: 23,
     requiresApproval: true,
     editingDurationMinutes: 30,
+    sessionTimeoutMinutes: 60,
   })
   const [loading, setLoading] = useState(false)
   const [pendingRequests, setPendingRequests] = useState<any[]>([])
@@ -339,6 +340,42 @@ export function MasterPanelSettingsModal({ isOpen, onClose }: MasterPanelSetting
                       step="10"
                       value={settings.editingDurationMinutes}
                       onChange={(e) => setSettings({ ...settings, editingDurationMinutes: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Session Timeout */}
+                <div>
+                  <label 
+                    className="block text-[13px] font-medium mb-2"
+                    style={{ color: COLORS.goldLight }}
+                  >
+                    Oturum Zaman Aşımı Süresi
+                  </label>
+                  <div 
+                    className="px-4 py-3 rounded-xl"
+                    style={{
+                      background: COLORS.glass,
+                      border: `1px solid ${COLORS.glassBorder}`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-neutral-500">Kullanıcılar bu süre sonunda otomatik çıkış yapacak</span>
+                      <span 
+                        className="text-[14px] font-bold"
+                        style={{ color: COLORS.champagneGold }}
+                      >
+                        {settings.sessionTimeoutMinutes} dakika
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="15"
+                      max="240"
+                      step="15"
+                      value={settings.sessionTimeoutMinutes}
+                      onChange={(e) => setSettings({ ...settings, sessionTimeoutMinutes: parseInt(e.target.value) })}
                       className="w-full"
                     />
                   </div>

@@ -46,6 +46,18 @@ export async function handlePasswordLogin(params: {
     )
   }
 
+  // 1. Çoklu Oturum Kontrolü: Kullanıcının aktif oturumlarını sonlandır
+  await basePrisma.session.updateMany({
+    where: {
+      userId: user.id,
+      revokedAt: null,
+    },
+    data: {
+      revokedAt: new Date(),
+    },
+  })
+
+  // 2. IP Çakışması Kontrolü: Aynı IP'den farklı kullanıcılar
   const conflictSession = await basePrisma.session.findFirst({
     where: {
       ip,
@@ -53,7 +65,7 @@ export async function handlePasswordLogin(params: {
       userId: { not: user.id },
       user: { siteId: user.siteId },
     },
-    select: { userId: true },
+    select: { userId: true, user: { select: { email: true, name: true } } },
   })
 
   if (conflictSession) {
@@ -65,13 +77,17 @@ export async function handlePasswordLogin(params: {
       meta: {
         ip,
         conflictingUserId: conflictSession.userId,
+        conflictingUserEmail: conflictSession.user.email,
+        conflictingUserName: conflictSession.user.name,
+        currentUserEmail: user.email,
+        currentUserName: user.name,
         trusted,
+        timestamp: new Date().toISOString(),
       },
     })
 
-    if (!trusted) {
-      return NextResponse.json({ error: "IP_CONFLICT" }, { status: 403 })
-    }
+    // Güvenli IP değilse, devam edilebilir ama log tutulur
+    // Master Panel'e bildirim gitmesi için event oluşturuldu
   }
 
   const deviceFingerprintHash = hashDeviceFingerprint(

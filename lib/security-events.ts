@@ -39,6 +39,7 @@ export const SecurityEventType = {
   // Security Alerts
   BRUTE_FORCE_ATTEMPT: "BRUTE_FORCE_ATTEMPT",
   SUSPICIOUS_IP: "SUSPICIOUS_IP",
+  IP_CONFLICT: "ip_conflict",
   RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
   SQL_INJECTION_ATTEMPT: "SQL_INJECTION_ATTEMPT",
   XSS_ATTEMPT: "XSS_ATTEMPT",
@@ -243,6 +244,13 @@ export const SecurityEventMetadata: Record<
     severity: SecurityEventSeverity.HIGH,
     category: "alert",
     description: "Activity from suspicious IP address",
+    requiresResolution: true,
+  },
+  [SecurityEventType.IP_CONFLICT]: {
+    label: "IP Çakışması",
+    severity: SecurityEventSeverity.HIGH,
+    category: "alert",
+    description: "Aynı IP adresinden farklı kullanıcılar giriş yaptı",
     requiresResolution: true,
   },
   [SecurityEventType.RATE_LIMIT_EXCEEDED]: {

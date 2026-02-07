@@ -129,7 +129,7 @@ export async function getAuthContext(request: Request) {
 
   const session = await basePrisma.session.findUnique({
     where: { id: payload.sessionId },
-    include: { user: true },
+    include: { user: { include: { site: { include: { masterPanelSettings: true } } } } },
   })
 
   if (!session || session.revokedAt) {
@@ -141,6 +141,21 @@ export async function getAuthContext(request: Request) {
     session.user.siteId !== payload.siteId ||
     session.user.role !== payload.role
   ) {
+    return null
+  }
+
+  // 3. Oturum Zaman Aşımı Kontrolü
+  const sessionTimeoutMinutes = session.user.site.masterPanelSettings?.sessionTimeoutMinutes || 60
+  const lastSeenAt = new Date(session.lastSeenAt)
+  const now = new Date()
+  const minutesSinceLastSeen = (now.getTime() - lastSeenAt.getTime()) / (1000 * 60)
+
+  if (minutesSinceLastSeen > sessionTimeoutMinutes) {
+    // Oturum zaman aşımına uğradı, revoke et
+    await basePrisma.session.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    })
     return null
   }
 
