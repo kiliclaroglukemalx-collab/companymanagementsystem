@@ -49,21 +49,27 @@ export async function middleware(request: NextRequest) {
   }
 
   const isAuthed = Boolean(authPayload)
+  const isGuardRoute = pathname === "/guard"
 
-  // Login olan kullanıcı /login'e giderse anasayfaya yönlendir
-  if (isLoginRoute && isAuthed) {
+  // Guard route herkese açık
+  if (isGuardRoute) {
+    return NextResponse.next()
+  }
+
+  // Login olan kullanıcı /login veya /guard'a giderse anasayfaya yönlendir
+  if ((isLoginRoute || isGuardRoute) && isAuthed) {
     const url = request.nextUrl.clone()
     url.pathname = "/"
     return NextResponse.redirect(url)
   }
 
-  // Login olmayan kullanıcı /login dışında bir yere giderse /login'e yönlendir
-  if (!isLoginRoute && !isAuthed) {
+  // Login olmayan kullanıcı /login dışında bir yere giderse /guard'a yönlendir
+  if (!isLoginRoute && !isGuardRoute && !isAuthed) {
     if (isApiRoute) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
     const url = request.nextUrl.clone()
-    url.pathname = "/login"
+    url.pathname = "/guard"
     return NextResponse.redirect(url)
   }
 
