@@ -50,19 +50,15 @@ export async function middleware(request: NextRequest) {
 
   const isAuthed = Boolean(authPayload)
 
-  // Public routes that don't require auth
-  const isPublicRoute = pathname === "/" || isLoginRoute
-
+  // Login olan kullanıcı /login'e giderse anasayfaya yönlendir
   if (isLoginRoute && isAuthed) {
     const url = request.nextUrl.clone()
     url.pathname = "/"
     return NextResponse.redirect(url)
   }
 
-  // Protected routes: /admin and /arena
-  const isProtectedRoute = pathname.startsWith("/admin") || pathname.startsWith("/arena")
-  
-  if (isProtectedRoute && !isAuthed) {
+  // Login olmayan kullanıcı /login dışında bir yere giderse /login'e yönlendir
+  if (!isLoginRoute && !isAuthed) {
     if (isApiRoute) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
