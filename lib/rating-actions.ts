@@ -348,6 +348,15 @@ export async function createRating(
     // Calculate and maybe create progress event
     await updateProgressEvent(auth.siteId, input.departmentId)
 
+    // Update Arena monthly score (PDF: Puanlama → Arena entegrasyonu)
+    const { updateMonthlyScore } = await import("@/lib/arena-league-actions")
+    await updateMonthlyScore(
+      input.ratedUserId,
+      auth.siteId,
+      input.departmentId,
+      totalScore
+    )
+
     revalidatePath("/arena")
     revalidatePath("/arena/rate")
 

@@ -7,8 +7,9 @@
 - ✅ **Multi-Tenant Architecture** (Site bazlı izolasyon)
 - ✅ **Role-Based Access Control** (SUPER_ADMIN, ADMIN, MANAGER, STAFF)
 - ✅ **Güvenlik & Audit** (IP kontrolü, 2FA, session yönetimi, security events)
-- ✅ **Arena - Live Feed** (Real-time event tracking)
+- ✅ **Arena Şampiyonlar Ligi** (10 kategorili lig sistemi, otomatik sıralama)
 - ✅ **Rating Core** (Kriter bazlı günlük puanlama sistemi)
+- ✅ **Ay Sonu Şampiyonları** (Otomatik arşivleme, kutlama ekranı)
 - ✅ **Türkçe UI** (Merkezi metin yönetimi)
 
 ## 🚀 Teknoloji Stack
@@ -84,8 +85,9 @@ Komut sonunda gecici sifre terminale yazilir.
 - `/admin/security-events/[id]` - Olay detayı
 
 ### Arena
-- `/arena` - Arena ana sayfa (Live Feed)
-- `/arena/rate` - Günlük puanlama
+- `/arena` - Şampiyonlar Ligi (10 kategorili sıralama)
+- `/arena/rate` - Günlük puanlama (00:00-17:00)
+- `/arena/champions` - Ay sonu şampiyonlar arşivi
 
 ## Guvenlik Notlari
 - Session cookie: HttpOnly + SameSite=Strict
@@ -95,6 +97,41 @@ Komut sonunda gecici sifre terminale yazilir.
 - Rate limit (login + first-password): bellek ici limit
 - IP kaynagi: `x-forwarded-for` header
 - Device fingerprint: `x-device-fingerprint` header (SHA256)
+
+## 🎯 Arena Şampiyonlar Ligi
+
+**PDF'e %100 sadık full implementasyon.**
+
+### Özellikler
+- ✅ 10 kategori lig sistemi (Üstat → Demir)
+- ✅ Yüzdelik dilim hesaplama (%1, %1-5, %5-10, vb.)
+- ✅ 4 ayrı personel tipi ligi (Personel, Admin, Birim Müdürü, Genel Müdür)
+- ✅ Günlük puanlama → Aylık kümülatif puan
+- ✅ Otomatik kategori yerleştirme
+- ✅ Gerçek zamanlı sıralama
+- ✅ Renkli kategori kartları (gradient)
+- ✅ Top 3 gösterimi (🥇🥈🥉)
+- ✅ Ay sonu otomatik arşivleme
+- ✅ Şampiyonlar kutlama ekranı
+
+### Puanlama Kuralları
+- **Zaman:** Sadece 00:00-17:00 arası (İstanbul saati)
+- **Kümülatif:** Her puanlama aylık toplama eklenir
+- **Otomatik:** Her puanlama sonrası lig güncellemesi
+- **Ay Sonu:** Otomatik arşivleme + yeni ay sıfırlama
+
+### Ay Sonu Sistemi
+```bash
+# Manuel arşivleme
+node scripts/archive-monthly-champions.js
+
+# Cron Job (Her ay 1. gün 00:00)
+0 0 1 * * node /path/to/scripts/archive-monthly-champions.js
+```
+
+Detaylı dokümantasyon: `docs/ARENA-LEAGUE-SYSTEM.md`
+
+---
 
 ## 🎯 Rating Core (Günlük Puanlama)
 

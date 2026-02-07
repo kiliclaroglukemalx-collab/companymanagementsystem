@@ -12,7 +12,7 @@ import { TR } from "@/lib/tr-constants"
 const navItems = [
   {
     href: "/arena",
-    label: "Canlı Akış",
+    label: "Şampiyonlar Ligi",
     icon: Trophy,
     roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF"],
   },
@@ -20,6 +20,12 @@ const navItems = [
     href: "/arena/rate",
     label: "Bugün Puan Ver",
     icon: Star,
+    roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF"],
+  },
+  {
+    href: "/arena/champions",
+    label: "Şampiyonlar",
+    icon: Trophy,
     roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF"],
   },
   {

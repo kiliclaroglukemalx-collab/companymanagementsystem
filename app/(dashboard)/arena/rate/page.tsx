@@ -13,6 +13,13 @@ export default async function RatePage() {
   if (!auth) {
     redirect("/login")
   }
+
+  // PDF: Puanlama sadece 00:00-17:00 arası yapılabilir
+  const now = new Date()
+  const istanbulTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }))
+  const currentHour = istanbulTime.getHours()
+  
+  const isRatingAllowed = currentHour >= 0 && currentHour < 17
   
   // Get user's department
   const user = await basePrisma.user.findUnique({
@@ -76,6 +83,27 @@ export default async function RatePage() {
   // Get today's progress
   const progressResult = await getTodayProgress(user.departmentId)
   const progress = progressResult.success ? progressResult.data : null
+
+  // PDF: Saat kontrolü - puanlama sadece 00:00-17:00 arası
+  if (!isRatingAllowed) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <div className="font-semibold">Puanlama Saati Dışında</div>
+              <div className="text-sm">
+                Puanlama sadece her gün saat <strong>00:00 - 17:00</strong> arası yapılabilir.
+                <br />
+                Şu an İstanbul saati: <strong>{istanbulTime.toLocaleTimeString("tr-TR")}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
   
   return (
     <div className="min-h-screen bg-slate-50">
