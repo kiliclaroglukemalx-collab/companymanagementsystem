@@ -24,6 +24,7 @@ import {
   Tooltip,
 } from "recharts"
 import type { DashboardCard } from "@/lib/dashboard-data"
+import { useSite } from "@/lib/site-context"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   dollar: DollarSign,
@@ -43,6 +44,7 @@ interface NeonExpandedViewProps {
 }
 
 export function NeonExpandedView({ card, onClose }: NeonExpandedViewProps) {
+  const { selectedSite } = useSite()
   const Icon = iconMap[card.icon] || DollarSign
 
   // Calculate trend
@@ -72,6 +74,28 @@ export function NeonExpandedView({ card, onClose }: NeonExpandedViewProps) {
       </motion.button>
 
       <div className="h-full flex flex-col p-8 lg:p-12 overflow-auto">
+        {/* Site Info Badge */}
+        {selectedSite && (
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 self-start"
+            style={{
+              background: `linear-gradient(135deg, ${selectedSite.themeColor}20, ${selectedSite.themeColor}05)`,
+              border: `1px solid ${selectedSite.themeColor}30`,
+            }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: selectedSite.themeColor }}
+            />
+            <span className="text-sm font-medium" style={{ color: selectedSite.themeColor }}>
+              {selectedSite.name}
+            </span>
+          </motion.div>
+        )}
+        
         {/* Header Section */}
         <motion.div
           className="flex items-start gap-6 mb-12"

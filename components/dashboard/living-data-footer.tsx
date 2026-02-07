@@ -3,23 +3,31 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { useMemo } from "react"
 import { brandTickerData, type Brand } from "@/lib/dashboard-data"
+import { useSite } from "@/lib/site-context"
 
 interface LivingDataFooterProps {
-  selectedBrand?: Brand
-  onOpenDataWall?: () => void
+  onOpenDataWall?: (brand: Brand) => void
 }
 
-export function LivingDataFooter({ selectedBrand, onOpenDataWall }: LivingDataFooterProps) {
+export function LivingDataFooter({ onOpenDataWall }: LivingDataFooterProps) {
+  const { selectedSite } = useSite()
+  
   // Get brand-specific ticker data or default
   const tickerItems = useMemo(() => {
-    if (selectedBrand) {
-      return brandTickerData[selectedBrand.id] || brandTickerData['default']
+    if (selectedSite) {
+      return brandTickerData[selectedSite.id] || brandTickerData['default']
     }
     return brandTickerData['default']
-  }, [selectedBrand])
+  }, [selectedSite])
 
   // Duplicate items for seamless loop
   const duplicatedItems = useMemo(() => [...tickerItems, ...tickerItems], [tickerItems])
+
+  const handleClick = () => {
+    if (onOpenDataWall && selectedSite) {
+      onOpenDataWall(selectedSite)
+    }
+  }
 
   return (
     <footer 
@@ -28,7 +36,7 @@ export function LivingDataFooter({ selectedBrand, onOpenDataWall }: LivingDataFo
         height: "180px",
         background: "#000000",
       }}
-      onClick={onOpenDataWall}
+      onClick={handleClick}
     >
       {/* Top Border - Subtle gradient line */}
       <div 
@@ -93,7 +101,7 @@ export function LivingDataFooter({ selectedBrand, onOpenDataWall }: LivingDataFo
           {/* Scrolling Ticker */}
           <AnimatePresence mode="wait">
             <motion.div
-              key={selectedBrand?.id || 'default'}
+              key={selectedSite?.id || 'default'}
               className="flex items-center gap-16 whitespace-nowrap"
               initial={{ opacity: 0, y: 10 }}
               animate={{
@@ -115,7 +123,7 @@ export function LivingDataFooter({ selectedBrand, onOpenDataWall }: LivingDataFo
             >
               {duplicatedItems.map((item, index) => (
                 <motion.div 
-                  key={`${selectedBrand?.id || 'default'}-${index}`}
+                  key={`${selectedSite?.id || 'default'}-${index}`}
                   className="flex items-center gap-4"
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -140,8 +148,8 @@ export function LivingDataFooter({ selectedBrand, onOpenDataWall }: LivingDataFo
                       delay: index * 0.3,
                     }}
                     style={{
-                      backgroundColor: selectedBrand?.themeColor || "#10b981",
-                      boxShadow: `0 0 8px ${selectedBrand?.rgbGlow || "rgba(16, 185, 129, 0.6)"}`,
+                      backgroundColor: selectedSite?.themeColor || "#10b981",
+                      boxShadow: `0 0 8px ${selectedSite?.rgbGlow || "rgba(16, 185, 129, 0.6)"}`,
                     }}
                   />
                   

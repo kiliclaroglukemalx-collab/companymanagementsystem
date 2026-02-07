@@ -5,6 +5,7 @@ import dynamic from "next/dynamic"
 import { motion, AnimatePresence, LayoutGroup, cubicBezier } from "framer-motion"
 import { MicroHeader } from "@/components/dashboard/micro-header"
 import { useTheme } from "@/lib/theme-context"
+import { SiteProvider } from "@/lib/site-context"
 import { HybridBrandSelector } from "@/components/dashboard/hybrid-brand-selector"
 import { SimpleCarousel } from "@/components/dashboard/simple-carousel"
 import { 
@@ -85,17 +86,12 @@ const pageTransition = {
 export default function DashboardPage() {
   const { currentTheme, settings } = useTheme()
   const [activeTab, setActiveTab] = useState("analytics")
-  const [selectedBrand, setSelectedBrand] = useState<Brand>(brands[0])
   const [selectedCard, setSelectedCard] = useState<DashboardCard | null>(null)
   const [isDataWallOpen, setIsDataWallOpen] = useState(false)
   const [lockedBrand, setLockedBrand] = useState<Brand | null>(null)
 
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab)
-  }, [])
-
-  const handleBrandChange = useCallback((brand: Brand) => {
-    setSelectedBrand(brand)
   }, [])
 
   const handleCardClick = useCallback((card: DashboardCard) => {
@@ -106,16 +102,57 @@ export default function DashboardPage() {
     setSelectedCard(null)
   }, [])
 
-  const handleOpenDataWall = useCallback(() => {
-    setLockedBrand(selectedBrand)
+  const handleOpenDataWall = useCallback((brand: Brand) => {
+    setLockedBrand(brand)
     setIsDataWallOpen(true)
-  }, [selectedBrand])
+  }, [])
 
   const handleCloseDataWall = useCallback(() => {
     setIsDataWallOpen(false)
     setLockedBrand(null)
   }, [])
 
+  return (
+    <SiteProvider initialSite={brands[0]}>
+      <DashboardContent 
+        currentTheme={currentTheme}
+        activeTab={activeTab}
+        handleTabChange={handleTabChange}
+        selectedCard={selectedCard}
+        handleCardClick={handleCardClick}
+        handleCloseExpanded={handleCloseExpanded}
+        isDataWallOpen={isDataWallOpen}
+        lockedBrand={lockedBrand}
+        handleOpenDataWall={handleOpenDataWall}
+        handleCloseDataWall={handleCloseDataWall}
+      />
+    </SiteProvider>
+  )
+}
+
+function DashboardContent({
+  currentTheme,
+  activeTab,
+  handleTabChange,
+  selectedCard,
+  handleCardClick,
+  handleCloseExpanded,
+  isDataWallOpen,
+  lockedBrand,
+  handleOpenDataWall,
+  handleCloseDataWall,
+}: {
+  currentTheme: any
+  activeTab: string
+  handleTabChange: (tab: string) => void
+  selectedCard: DashboardCard | null
+  handleCardClick: (card: DashboardCard) => void
+  handleCloseExpanded: () => void
+  isDataWallOpen: boolean
+  lockedBrand: Brand | null
+  handleOpenDataWall: (brand: Brand) => void
+  handleCloseDataWall: () => void
+}) {
   return (
     <LayoutGroup>
       <div 
@@ -136,10 +173,7 @@ export default function DashboardPage() {
             >
               {/* Brand Selector - Critical, loaded immediately */}
               <section className="relative py-8 px-6" style={{ background: "#000000" }}>
-                <HybridBrandSelector
-                  selectedBrand={selectedBrand}
-                  onBrandChange={handleBrandChange}
-                />
+                <HybridBrandSelector />
               </section>
 
               {/* Analytics Module Vitrine */}
@@ -190,7 +224,6 @@ export default function DashboardPage() {
 
               {/* Below-fold content - lazy loaded */}
               <LivingDataFooter
-                selectedBrand={selectedBrand} 
                 onOpenDataWall={handleOpenDataWall}
               />
 

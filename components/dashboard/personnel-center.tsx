@@ -40,6 +40,7 @@ import {
   Upload
 } from "lucide-react"
 import { brands, type Brand } from "@/lib/dashboard-data"
+import { useSite } from "@/lib/site-context"
 
 // Department data with images
 const departments = [
@@ -425,7 +426,7 @@ export function PersonnelCenter({ isManager = true, userRole = 'birim_muduru' }:
   const [selectedRankFilter, setSelectedRankFilter] = useState<string | null>(null)
   
   // Brand and Department selection
-  const [selectedBrand, setSelectedBrand] = useState<Brand>(brands[0])
+  const { selectedSite: selectedBrand, setSelectedSite: setSelectedBrand } = useSite()
   const [selectedDepartment, setSelectedDepartment] = useState(departments[0])
   const [isBrandSearchOpen, setIsBrandSearchOpen] = useState(false)
   const [brandSearchQuery, setBrandSearchQuery] = useState("")

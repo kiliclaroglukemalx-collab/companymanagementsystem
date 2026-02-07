@@ -21,6 +21,7 @@ import {
   Award
 } from "lucide-react"
 import { brands, type Brand } from "@/lib/dashboard-data"
+import { useSite } from "@/lib/site-context"
 
 // Chronos Module Color Palette
 const COLORS = {
@@ -197,7 +198,7 @@ export function ShiftCalendar({ isManager = true }: ShiftCalendarProps) {
   const [selectedHour, setSelectedHour] = useState(realHour)
   
   // Brand and Department selection
-  const [selectedBrand, setSelectedBrand] = useState<Brand>(brands[0])
+  const { selectedSite: selectedBrand, setSelectedSite: setSelectedBrand } = useSite()
   const [selectedDepartment, setSelectedDepartment] = useState(departments[0])
   const [isBrandSearchOpen, setIsBrandSearchOpen] = useState(false)
   const [brandSearchQuery, setBrandSearchQuery] = useState("")

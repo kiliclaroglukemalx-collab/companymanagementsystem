@@ -4,15 +4,12 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, Search, Building2, Check, X } from "lucide-react"
 import { brands, type Brand } from "@/lib/dashboard-data"
-
-interface HybridBrandSelectorProps {
-  selectedBrand: Brand
-  onBrandChange: (brand: Brand) => void
-}
+import { useSite } from "@/lib/site-context"
 
 const AUTO_CYCLE_INTERVAL = 5000 // 5 seconds
 
-export function HybridBrandSelector({ selectedBrand, onBrandChange }: HybridBrandSelectorProps) {
+export function HybridBrandSelector() {
+  const { selectedSite: selectedBrand, setSelectedSite: onBrandChange } = useSite()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isTransitioning, setIsTransitioning] = useState(false)

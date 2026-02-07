@@ -5,12 +5,47 @@
 ## 📋 Özellikler
 
 - ✅ **Multi-Tenant Architecture** (Site bazlı izolasyon)
+- ✅ **Global Site Selection** (Merkezi site yönetimi, anında senkronizasyon)
 - ✅ **Role-Based Access Control** (SUPER_ADMIN, ADMIN, MANAGER, STAFF)
 - ✅ **Güvenlik & Audit** (IP kontrolü, 2FA, session yönetimi, security events)
 - ✅ **Arena Şampiyonlar Ligi** (10 kategorili lig sistemi, otomatik sıralama)
 - ✅ **Rating Core** (Kriter bazlı günlük puanlama sistemi)
 - ✅ **Ay Sonu Şampiyonları** (Otomatik arşivleme, kutlama ekranı)
 - ✅ **Türkçe UI** (Merkezi metin yönetimi)
+
+## 🎯 Site Selector - Global State Management
+
+**Yeni Özellik:** Merkezi site yönetimi ile tüm bileşenlerde anında senkronizasyon.
+
+### Ana Özellikler
+- **Merkezi Durum:** React Context API ile global site yönetimi
+- **Anında Güncelleme:** Site değiştiğinde tüm modüller otomatik güncellenir
+- **Veri İzolasyonu:** Her site kendi bloğunda bağımsız çalışır
+- **Tıklanabilir Analitikler:** 5 ana analitik kart detaylı görünüm sunar
+
+### Etkilenen Bölümler
+1. **Analitik Modüller** - Site bazlı finansal, bonus, spor, casino, oyuncu analizi
+2. **Canlı Veri Akışı** - Site özel ticker verileri
+3. **Personel Merkezi** - Site bazlı personel ve departman yönetimi
+4. **Mesai Takvimi** - Site özel vardiya sistemleri
+5. **Para Nasıl Akıyor?** - Tüm siteler için toplam (site seçiminden bağımsız)
+
+### Kullanım
+```typescript
+import { useSite } from '@/lib/site-context'
+
+function MyComponent() {
+  const { selectedSite, setSelectedSite, isLoading } = useSite()
+  return <div>{selectedSite.name}</div>
+}
+```
+
+### Dokümantasyon
+- `SITE_SELECTOR_IMPLEMENTATION.md` - Detaylı teknik dokümantasyon
+- `IMPLEMENTATION_SUMMARY.md` - Tamamlanma özeti
+- `QUICK_REFERENCE_GUIDE.md` - Hızlı başvuru kılavuzu
+
+---
 
 ## 🚀 Teknoloji Stack
 
