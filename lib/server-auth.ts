@@ -113,3 +113,23 @@ export function assertSiteAccess(auth: AuthContext, siteId: string) {
     throw new ServerAuthError(403, "Forbidden: Site access denied")
   }
 }
+
+/**
+ * Get current user with full details (for API routes)
+ */
+export async function getCurrentUser() {
+  const auth = await getServerAuthContext()
+  if (!auth) {
+    return null
+  }
+  
+  const user = await basePrisma.user.findUnique({
+    where: { id: auth.userId },
+    include: {
+      department: true,
+      site: true
+    }
+  })
+  
+  return user
+}
