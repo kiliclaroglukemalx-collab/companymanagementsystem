@@ -67,8 +67,8 @@ import {
 import Image from "next/image"
 import { useTheme } from "@/lib/theme-context"
 
-// Mock management user check
-const isManagementUser = true
+// Will be determined dynamically from /api/me in SettingsPanel
+let isManagementUser = true
 
 // Global management notification events (mock)
 interface ManagementEvent {
@@ -5064,6 +5064,22 @@ function LogRow({ user, action, ip, time, status }: { user: string; action: stri
 // Main Component
 export function SettingsPanel() {
   const [activeTab, setActiveTab] = useState("profil")
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.role) {
+          setUserRole(data.role)
+          const mgmt = data.role === "SUPER_ADMIN"
+          isManagementUser = mgmt
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const isAdmin = userRole === "SUPER_ADMIN"
   const visibleTabs = getVisibleTabs()
 
   const renderContent = () => {
@@ -5103,6 +5119,7 @@ case "profil": return <ProfilContent />
                   tab={tab} 
                   isActive={activeTab === tab.id}
                   onClick={() => setActiveTab(tab.id)}
+                  isAdmin={isAdmin}
                 />
               ))}
 
@@ -5124,6 +5141,7 @@ case "profil": return <ProfilContent />
                   tab={tab} 
                   isActive={activeTab === tab.id}
                   onClick={() => setActiveTab(tab.id)}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>
@@ -5157,7 +5175,7 @@ case "profil": return <ProfilContent />
   )
 }
 
-function TabButton({ tab, isActive, onClick }: { tab: TabItem; isActive: boolean; onClick: () => void }) {
+function TabButton({ tab, isActive, onClick, isAdmin = false }: { tab: TabItem; isActive: boolean; onClick: () => void; isAdmin?: boolean }) {
   return (
     <motion.button
       onClick={onClick}
@@ -5178,7 +5196,7 @@ function TabButton({ tab, isActive, onClick }: { tab: TabItem; isActive: boolean
       >
         {tab.label}
       </span>
-      {tab.isAdminOnly && (
+      {tab.isAdminOnly && !isAdmin && (
         <Lock className="w-3 h-3 ml-auto" style={{ color: "#525252" }} />
       )}
     </motion.button>
