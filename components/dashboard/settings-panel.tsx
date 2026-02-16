@@ -67,8 +67,7 @@ import {
 import Image from "next/image"
 import { useTheme } from "@/lib/theme-context"
 
-// Will be determined dynamically from /api/me in SettingsPanel
-let isManagementUser = true
+// isManagementUser removed - now handled via isSuperAdmin React state in SettingsPanel
 
 // Global management notification events (mock)
 interface ManagementEvent {
@@ -204,14 +203,6 @@ const tabs: TabItem[] = [
   { id: "guvenlik-politikalari", label: "Guvenlik Politikalari", icon: FileText, isAdminOnly: true },
   { id: "giris-kayitlari", label: "Giris Kayitlari", icon: Clock, isAdminOnly: true },
 ]
-
-// Filter tabs based on user role
-const getVisibleTabs = () => {
-  if (isManagementUser) {
-    return tabs
-  }
-  return tabs.filter(tab => !tab.isAdminOnly)
-}
 
 // Profile Tab Content
 function ProfilContent() {
@@ -5064,23 +5055,20 @@ function LogRow({ user, action, ip, time, status }: { user: string; action: stri
 // Main Component
 export function SettingsPanel() {
   const [activeTab, setActiveTab] = useState("profil")
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(true)
 
   useEffect(() => {
     fetch("/api/me")
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data?.role) {
-          setUserRole(data.role)
-          const mgmt = data.role === "SUPER_ADMIN"
-          isManagementUser = mgmt
+          setIsSuperAdmin(data.role === "SUPER_ADMIN")
         }
       })
       .catch(() => {})
   }, [])
 
-  const isAdmin = userRole === "SUPER_ADMIN"
-  const visibleTabs = getVisibleTabs()
+  const visibleTabs = isSuperAdmin ? tabs : tabs.filter(tab => !tab.isAdminOnly)
 
   const renderContent = () => {
     switch (activeTab) {
@@ -5119,12 +5107,12 @@ case "profil": return <ProfilContent />
                   tab={tab} 
                   isActive={activeTab === tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  isAdmin={isAdmin}
+                  isAdmin={isSuperAdmin}
                 />
               ))}
 
               {/* Admin Divider */}
-              {isManagementUser && (
+              {isSuperAdmin && (
                 <div className="pt-4 pb-2">
                   <div className="flex items-center gap-2 px-3 mb-2">
                     <div className="flex-1 h-px bg-neutral-800" />
@@ -5141,7 +5129,7 @@ case "profil": return <ProfilContent />
                   tab={tab} 
                   isActive={activeTab === tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  isAdmin={isAdmin}
+                  isAdmin={isSuperAdmin}
                 />
               ))}
             </div>
