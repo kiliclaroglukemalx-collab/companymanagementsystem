@@ -1,6 +1,6 @@
 import { listUsers, listSites, listDepartmentsForCurrentAdmin } from "@/lib/admin-actions"
 import { getServerAuthContext } from "@/lib/server-auth"
-import { isAdminLike, isLimitedAccess } from "@/lib/role-helpers"
+import { isAdminLike, isLimitedAccess, isSuperAdmin } from "@/lib/role-helpers"
 import { UsersTable } from "@/components/admin/users-table"
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
