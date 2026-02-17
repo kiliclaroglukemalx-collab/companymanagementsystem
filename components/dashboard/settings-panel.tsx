@@ -4,7 +4,7 @@ import { useEffect } from "react"
 
 import React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   User, 
@@ -62,7 +62,11 @@ import {
   PanelLeft,
   PanelRight,
   Percent,
-  Plus
+  Plus,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react"
 import Image from "next/image"
 import { useTheme } from "@/lib/theme-context"
@@ -4289,60 +4293,191 @@ function YetkilendirmeContent() {
 // Admin: Data Upload Center
 function VeriYuklemeContent() {
   const [activeTab, setActiveTab] = useState<'upload' | 'commission'>('upload')
+  // Upload state
   const [selectedSite, setSelectedSite] = useState('')
-  const [selectedDataType, setSelectedDataType] = useState('')
   const [showSiteDropdown, setShowSiteDropdown] = useState(false)
-  const [showDataTypeDropdown, setShowDataTypeDropdown] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
+  const [uploadMode, setUploadMode] = useState<'daily' | 'custom'>('daily')
+  const [customDate, setCustomDate] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  // Commission state
   const [commissionSite, setCommissionSite] = useState('')
   const [showCommissionSiteDropdown, setShowCommissionSiteDropdown] = useState(false)
-  const [brokers, setBrokers] = useState<{id: string; name: string; rate: number; siteId: string}[]>([
-    { id: '1', name: 'Papara', rate: 2.5, siteId: '1' },
-    { id: '2', name: 'PayFix', rate: 3.0, siteId: '1' },
-    { id: '3', name: 'Papara', rate: 2.8, siteId: '2' },
-    { id: '4', name: 'Havale', rate: 0, siteId: '2' },
-  ])
-  const [newBrokerName, setNewBrokerName] = useState('')
-  const [newBrokerRate, setNewBrokerRate] = useState('')
-  const [editingBroker, setEditingBroker] = useState<string | null>(null)
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
+  const [isLoadingMethods, setIsLoadingMethods] = useState(false)
+  const [editingMethod, setEditingMethod] = useState<string | null>(null)
+  const [newMethodName, setNewMethodName] = useState('')
+  const [newMethodExcelName, setNewMethodExcelName] = useState('')
+  const [newMethodRate, setNewMethodRate] = useState('')
+  const [newMethodCekimRate, setNewMethodCekimRate] = useState('')
+  const [newMethodBakiye, setNewMethodBakiye] = useState('')
   const [testGrossAmount, setTestGrossAmount] = useState('')
+  // Shared state
+  const [sites, setSites] = useState<any[]>([])
+  const [isLoadingSites, setIsLoadingSites] = useState(true)
+  const [recentUploads, setRecentUploads] = useState<any[]>([])
+  const [isLoadingUploads, setIsLoadingUploads] = useState(true)
 
-  const sites = [
-    { id: '1', name: 'Golden Palace' },
-    { id: '2', name: 'Victory Games' },
-    { id: '3', name: 'Lucky Stars' },
-  ]
-
-  const dataTypes = [
-    { id: 'yatirim', name: 'Yatirim Verileri', description: 'Gunluk yatirim ve cekim verileri' },
-    { id: 'personel', name: 'Personel Listesi', description: 'Calisan bilgileri ve departman atamalari' },
-    { id: 'vardiya', name: 'Vardiya Plani', description: 'Haftalik/aylik mesai planlari' },
-    { id: 'performans', name: 'Performans Verileri', description: 'Bireysel ve takim performans metrikleri' },
-    { id: 'musteri', name: 'Musteri Verileri', description: 'Musteri segmentasyon ve analiz verileri' },
-    { id: 'finans', name: 'Finansal Raporlar', description: 'Gelir-gider ve kar/zarar verileri' },
-  ]
-
-  const filteredBrokers = commissionSite ? brokers.filter(b => b.siteId === commissionSite) : []
-
-  const addBroker = () => {
-    if (!newBrokerName || !newBrokerRate || !commissionSite) return
-    const newBroker = {
-      id: Date.now().toString(),
-      name: newBrokerName,
-      rate: parseFloat(newBrokerRate),
-      siteId: commissionSite
+  const loadSites = useCallback(async () => {
+    try {
+      setIsLoadingSites(true)
+      const res = await fetch('/api/admin/sites')
+      if (res.ok) {
+        const data = await res.json()
+        setSites(data.sites || [])
+      }
+    } catch (error) {
+      console.error('Failed to load sites:', error)
+    } finally {
+      setIsLoadingSites(false)
     }
-    setBrokers([...brokers, newBroker])
-    setNewBrokerName('')
-    setNewBrokerRate('')
+  }, [])
+
+  const loadRecentUploads = useCallback(async () => {
+    try {
+      setIsLoadingUploads(true)
+      const res = await fetch('/api/data-upload/list')
+      if (res.ok) {
+        const data = await res.json()
+        setRecentUploads(data.uploads || [])
+      }
+    } catch (error) {
+      console.error('Failed to load uploads:', error)
+    } finally {
+      setIsLoadingUploads(false)
+    }
+  }, [])
+
+  const loadPaymentMethods = useCallback(async (siteId: string) => {
+    try {
+      setIsLoadingMethods(true)
+      const res = await fetch(`/api/payment-methods?siteId=${siteId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setPaymentMethods(data.methods || [])
+      }
+    } catch (error) {
+      console.error('Failed to load payment methods:', error)
+    } finally {
+      setIsLoadingMethods(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadSites()
+    loadRecentUploads()
+  }, [loadSites, loadRecentUploads])
+
+  useEffect(() => {
+    if (commissionSite) {
+      loadPaymentMethods(commissionSite)
+    }
+  }, [commissionSite, loadPaymentMethods])
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0])
+      setUploadStatus({ type: null, message: '' })
+    }
   }
 
-  const updateBrokerRate = (id: string, newRate: number) => {
-    setBrokers(brokers.map(b => b.id === id ? { ...b, rate: newRate } : b))
-    setEditingBroker(null)
+  const handleUpload = async () => {
+    if (!selectedFile || !selectedSite) {
+      setUploadStatus({ type: 'error', message: 'Dosya ve site seciniz' })
+      return
+    }
+
+    setIsUploading(true)
+    setUploadStatus({ type: null, message: '' })
+
+    try {
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('siteId', selectedSite)
+      formData.append('fileType', 'EXCEL')
+      formData.append('analyticModule', 'FINANS')
+      if (uploadMode === 'custom' && customDate) {
+        formData.append('snapshotDate', customDate)
+      }
+      formData.append('snapshotHour', 'daily')
+
+      const res = await fetch('/api/data-upload/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setUploadStatus({ type: 'success', message: 'Dosya basariyla yuklendi ve isleniyor' })
+        setSelectedFile(null)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        loadRecentUploads()
+      } else {
+        setUploadStatus({ type: 'error', message: data.error || 'Yukleme basarisiz' })
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      setUploadStatus({ type: 'error', message: 'Yukleme basarisiz' })
+    } finally {
+      setIsUploading(false)
+    }
   }
 
-  const deleteBroker = (id: string) => {
-    setBrokers(brokers.filter(b => b.id !== id))
+  const addPaymentMethod = async () => {
+    if (!newMethodName || !commissionSite) return
+    try {
+      const res = await fetch('/api/payment-methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: commissionSite,
+          name: newMethodName,
+          excelKolonAdi: newMethodExcelName || newMethodName,
+          komisyonOrani: parseFloat(newMethodRate) || 0,
+          cekimKomisyonOrani: parseFloat(newMethodCekimRate) || 0,
+          baslangicBakiye: parseFloat(newMethodBakiye) || 0,
+        }),
+      })
+      if (res.ok) {
+        setNewMethodName('')
+        setNewMethodExcelName('')
+        setNewMethodRate('')
+        setNewMethodCekimRate('')
+        setNewMethodBakiye('')
+        loadPaymentMethods(commissionSite)
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Eklenemedi')
+      }
+    } catch (error) {
+      console.error('Add method error:', error)
+    }
+  }
+
+  const updateMethodField = async (id: string, field: string, value: string | number) => {
+    try {
+      await fetch(`/api/payment-methods/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      })
+      loadPaymentMethods(commissionSite)
+      setEditingMethod(null)
+    } catch (error) {
+      console.error('Update method error:', error)
+    }
+  }
+
+  const deleteMethod = async (id: string) => {
+    try {
+      await fetch(`/api/payment-methods/${id}`, { method: 'DELETE' })
+      loadPaymentMethods(commissionSite)
+    } catch (error) {
+      console.error('Delete method error:', error)
+    }
   }
 
   const calculateCommission = (grossAmount: number, rate: number) => {
@@ -4351,22 +4486,74 @@ function VeriYuklemeContent() {
     return { commission, netAmount }
   }
 
+  // Site dropdown renderer (reused in both tabs)
+  const renderSiteDropdown = (
+    value: string,
+    setValue: (v: string) => void,
+    isOpen: boolean,
+    setIsOpen: (v: boolean) => void,
+    color: 'purple' | 'cyan' = 'purple'
+  ) => {
+    const colors = color === 'purple'
+      ? { bg: 'rgba(168, 85, 247, 0.08)', border: 'rgba(168, 85, 247, 0.2)', text: '#a855f7', class: 'text-purple-400' }
+      : { bg: 'rgba(6, 182, 212, 0.08)', border: 'rgba(6, 182, 212, 0.2)', text: '#06b6d4', class: 'text-cyan-400' }
+
+    return (
+      <div className="relative">
+        <label className="text-xs font-medium text-neutral-500 mb-2 block">Site Secimi</label>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full px-4 py-3 rounded-xl text-sm text-left flex items-center justify-between transition-all"
+          style={{ background: colors.bg, border: `1px solid ${colors.border}` }}
+        >
+          <span className={value ? 'text-white' : 'text-neutral-500'}>
+            {isLoadingSites ? 'Yukleniyor...' : (value ? sites.find(s => s.id === value)?.name : 'Site seciniz...')}
+          </span>
+          <ChevronDown size={16} className={colors.class} />
+        </button>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-20"
+              style={{ background: 'rgba(15, 15, 15, 0.98)', border: `1px solid ${colors.border}`, boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)' }}
+            >
+              {sites.map(site => (
+                <button
+                  key={site.id}
+                  onClick={() => { setValue(site.id); setIsOpen(false) }}
+                  className="w-full px-4 py-3 text-left text-sm transition-all flex items-center gap-2"
+                  style={{ background: value === site.id ? `${colors.text}26` : 'transparent', color: value === site.id ? colors.text : '#a3a3a3' }}
+                >
+                  {value === site.id && <Check size={14} />}
+                  {site.name}
+                </button>
+              ))}
+              {sites.length === 0 && !isLoadingSites && (
+                <p className="px-4 py-3 text-sm text-neutral-500">Site bulunamadi</p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <AdminBadge />
-      
+
       {/* Tab Switcher */}
-      <div 
+      <div
         className="flex p-1 rounded-xl"
         style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
       >
         <button
           onClick={() => setActiveTab('upload')}
           className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
-          style={{
-            background: activeTab === 'upload' ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
-            color: activeTab === 'upload' ? '#a855f7' : '#737373',
-          }}
+          style={{ background: activeTab === 'upload' ? 'rgba(168, 85, 247, 0.15)' : 'transparent', color: activeTab === 'upload' ? '#a855f7' : '#737373' }}
         >
           <Upload size={16} />
           Veri Yukleme
@@ -4374,10 +4561,7 @@ function VeriYuklemeContent() {
         <button
           onClick={() => setActiveTab('commission')}
           className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
-          style={{
-            background: activeTab === 'commission' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-            color: activeTab === 'commission' ? '#06b6d4' : '#737373',
-          }}
+          style={{ background: activeTab === 'commission' ? 'rgba(6, 182, 212, 0.15)' : 'transparent', color: activeTab === 'commission' ? '#06b6d4' : '#737373' }}
         >
           <Percent size={16} />
           Komisyon Yonetimi
@@ -4385,306 +4569,277 @@ function VeriYuklemeContent() {
       </div>
 
       {activeTab === 'upload' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* Site and Data Type Selectors */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Site Selector */}
-            <div className="relative">
-              <label className="text-xs font-medium text-neutral-500 mb-2 block">Site Secimi</label>
-              <button
-                onClick={() => setShowSiteDropdown(!showSiteDropdown)}
-                className="w-full px-4 py-3 rounded-xl text-sm text-left flex items-center justify-between transition-all"
-                style={{ 
-                  background: 'rgba(168, 85, 247, 0.08)', 
-                  border: '1px solid rgba(168, 85, 247, 0.2)' 
-                }}
-              >
-                <span className={selectedSite ? 'text-white' : 'text-neutral-500'}>
-                  {selectedSite ? sites.find(s => s.id === selectedSite)?.name : 'Site seciniz...'}
-                </span>
-                <ChevronDown size={16} className="text-purple-400" />
-              </button>
-              
-              <AnimatePresence>
-                {showSiteDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-20"
-                    style={{ 
-                      background: 'rgba(15, 15, 15, 0.98)', 
-                      border: '1px solid rgba(168, 85, 247, 0.2)',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
-                    }}
-                  >
-                    {sites.map(site => (
-                      <button
-                        key={site.id}
-                        onClick={() => {
-                          setSelectedSite(site.id)
-                          setShowSiteDropdown(false)
-                        }}
-                        className="w-full px-4 py-3 text-left text-sm transition-all flex items-center gap-2"
-                        style={{ 
-                          background: selectedSite === site.id ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
-                          color: selectedSite === site.id ? '#a855f7' : '#a3a3a3'
-                        }}
-                      >
-                        {selectedSite === site.id && <Check size={14} />}
-                        {site.name}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* Site Selector */}
+          {renderSiteDropdown(selectedSite, setSelectedSite, showSiteDropdown, setShowSiteDropdown, 'purple')}
 
-            {/* Data Type Selector */}
-            <div className="relative">
-              <label className="text-xs font-medium text-neutral-500 mb-2 block">Veri Tipi</label>
+          {/* Upload Mode Tabs */}
+          {selectedSite && (
+            <div className="flex gap-2">
               <button
-                onClick={() => setShowDataTypeDropdown(!showDataTypeDropdown)}
-                className="w-full px-4 py-3 rounded-xl text-sm text-left flex items-center justify-between transition-all"
-                style={{ 
-                  background: 'rgba(6, 182, 212, 0.08)', 
-                  border: '1px solid rgba(6, 182, 212, 0.2)' 
-                }}
+                onClick={() => setUploadMode('daily')}
+                className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+                style={{ background: uploadMode === 'daily' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255,255,255,0.03)', color: uploadMode === 'daily' ? '#a855f7' : '#737373' }}
               >
-                <span className={selectedDataType ? 'text-white' : 'text-neutral-500'}>
-                  {selectedDataType ? dataTypes.find(d => d.id === selectedDataType)?.name : 'Veri tipi seciniz...'}
-                </span>
-                <ChevronDown size={16} className="text-cyan-400" />
+                Gunluk Excel
               </button>
-              
-              <AnimatePresence>
-                {showDataTypeDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-20"
-                    style={{ 
-                      background: 'rgba(15, 15, 15, 0.98)', 
-                      border: '1px solid rgba(6, 182, 212, 0.2)',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
-                    }}
-                  >
-                    {dataTypes.map(type => (
-                      <button
-                        key={type.id}
-                        onClick={() => {
-                          setSelectedDataType(type.id)
-                          setShowDataTypeDropdown(false)
-                        }}
-                        className="w-full px-4 py-3 text-left transition-all"
-                        style={{ 
-                          background: selectedDataType === type.id ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          {selectedDataType === type.id && <Check size={14} className="text-cyan-400" />}
-                          <span style={{ color: selectedDataType === type.id ? '#06b6d4' : '#a3a3a3' }} className="text-sm">{type.name}</span>
-                        </div>
-                        <p className="text-[11px] text-neutral-600 mt-0.5 ml-5">{type.description}</p>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <button
+                onClick={() => setUploadMode('custom')}
+                className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+                style={{ background: uploadMode === 'custom' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255,255,255,0.03)', color: uploadMode === 'custom' ? '#a855f7' : '#737373' }}
+              >
+                Gecmis Gun Yukle
+              </button>
             </div>
-          </div>
+          )}
+
+          {/* Date Picker for Custom Mode */}
+          {selectedSite && uploadMode === 'custom' && (
+            <div>
+              <label className="text-xs font-medium text-neutral-500 mb-2 block">Tarih Secimi</label>
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm text-white"
+                style={{ background: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.2)', colorScheme: 'dark' }}
+              />
+            </div>
+          )}
 
           {/* Upload Area */}
-          <div 
-            className={`p-8 rounded-2xl border-2 border-dashed text-center transition-all ${
-              selectedSite && selectedDataType ? 'opacity-100' : 'opacity-50 pointer-events-none'
-            }`}
-            style={{ borderColor: "rgba(168, 85, 247, 0.3)", background: "rgba(168, 85, 247, 0.03)" }}
-          >
-            <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
-            <h3 className="text-white font-semibold mb-2">Dosya Yukle</h3>
-            <p className="text-sm text-neutral-500 mb-2">
-              {selectedSite && selectedDataType 
-                ? `${sites.find(s => s.id === selectedSite)?.name} icin ${dataTypes.find(d => d.id === selectedDataType)?.name} yukleyin`
-                : 'Oncelikle site ve veri tipi seciniz'
+          <div
+            className={`p-8 rounded-2xl border-2 border-dashed text-center transition-all ${selectedSite ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}
+            style={{ borderColor: 'rgba(168, 85, 247, 0.3)', background: 'rgba(168, 85, 247, 0.03)' }}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+            onDrop={(e) => {
+              e.preventDefault(); e.stopPropagation()
+              if (e.dataTransfer.files?.[0]) {
+                setSelectedFile(e.dataTransfer.files[0])
+                setUploadStatus({ type: null, message: '' })
               }
+            }}
+          >
+            {isUploading ? (
+              <Loader2 className="w-12 h-12 mx-auto mb-4 text-purple-400 animate-spin" />
+            ) : (
+              <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
+            )}
+            <h3 className="text-white font-semibold mb-2">
+              {selectedFile ? selectedFile.name : 'Dosya Yukle'}
+            </h3>
+            <p className="text-sm text-neutral-500 mb-2">
+              {selectedSite
+                ? selectedFile
+                  ? `${(selectedFile.size / 1024).toFixed(1)} KB - ${sites.find(s => s.id === selectedSite)?.name}`
+                  : `${sites.find(s => s.id === selectedSite)?.name} icin Excel dosyasi yukleyin`
+                : 'Oncelikle site seciniz'}
             </p>
-            <p className="text-xs text-neutral-600 mb-4">CSV, Excel veya JSON dosyalarini surukleyin</p>
-            <button 
-              className="px-6 py-2.5 rounded-xl text-sm font-medium"
-              style={{ background: "rgba(168, 85, 247, 0.2)", color: "#a855f7" }}
-            >
-              Dosya Sec
-            </button>
+            <p className="text-xs text-neutral-600 mb-4">Excel (.xlsx, .xls) veya CSV dosyalarini surukleyin</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-6 py-2.5 rounded-xl text-sm font-medium"
+                style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7' }}
+                disabled={isUploading}
+              >
+                Dosya Sec
+              </button>
+              {selectedFile && (
+                <button
+                  onClick={handleUpload}
+                  disabled={isUploading || (uploadMode === 'custom' && !customDate)}
+                  className="px-6 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+                  style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}
+                >
+                  {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                  Yukle
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Upload Status */}
+          {uploadStatus.type && (
+            <div
+              className="flex items-center gap-2 p-3 rounded-xl text-sm"
+              style={{
+                background: uploadStatus.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                border: `1px solid ${uploadStatus.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                color: uploadStatus.type === 'success' ? '#10b981' : '#ef4444',
+              }}
+            >
+              {uploadStatus.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              {uploadStatus.message}
+            </div>
+          )}
 
           {/* Recent Uploads */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-4">Son Yuklemeler</h3>
-            <div className="space-y-2">
-              <UploadHistoryItem name="personel_listesi.csv" date="27 Ocak 2026" status="success" site="Golden Palace" dataType="Personel" />
-              <UploadHistoryItem name="yatirim_verileri.xlsx" date="26 Ocak 2026" status="success" site="Victory Games" dataType="Yatirim" />
-              <UploadHistoryItem name="vardiya_plani.xlsx" date="25 Ocak 2026" status="success" site="Golden Palace" dataType="Vardiya" />
-              <UploadHistoryItem name="risk_raporu.json" date="24 Ocak 2026" status="error" site="Lucky Stars" dataType="Finans" />
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white">Son Yuklemeler</h3>
+              <button onClick={loadRecentUploads} className="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                <RefreshCw size={14} className={`text-neutral-500 ${isLoadingUploads ? 'animate-spin' : ''}`} />
+              </button>
             </div>
+            {isLoadingUploads ? (
+              <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-purple-400" /></div>
+            ) : recentUploads.length === 0 ? (
+              <p className="text-sm text-neutral-500 text-center py-6">Henuz yukleme yapilmamis</p>
+            ) : (
+              <div className="space-y-2">
+                {recentUploads.slice(0, 10).map((upload: any) => (
+                  <UploadHistoryItem
+                    key={upload.id}
+                    name={upload.fileName}
+                    date={new Date(upload.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    status={upload.status === 'COMPLETED' ? 'success' : upload.status === 'FAILED' ? 'error' : 'processing'}
+                    site={upload.site?.name}
+                    dataType={upload.analyticModule}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </motion.div>
       )}
 
       {activeTab === 'commission' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           {/* Commission Site Selector */}
-          <div className="relative">
-            <label className="text-xs font-medium text-neutral-500 mb-2 block">Site Secimi</label>
-            <button
-              onClick={() => setShowCommissionSiteDropdown(!showCommissionSiteDropdown)}
-              className="w-full px-4 py-3 rounded-xl text-sm text-left flex items-center justify-between transition-all"
-              style={{ 
-                background: 'rgba(6, 182, 212, 0.08)', 
-                border: '1px solid rgba(6, 182, 212, 0.2)' 
-              }}
-            >
-              <span className={commissionSite ? 'text-white' : 'text-neutral-500'}>
-                {commissionSite ? sites.find(s => s.id === commissionSite)?.name : 'Site seciniz...'}
-              </span>
-              <ChevronDown size={16} className="text-cyan-400" />
-            </button>
-            
-            <AnimatePresence>
-              {showCommissionSiteDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 mt-2 w-full rounded-xl overflow-hidden z-20"
-                  style={{ 
-                    background: 'rgba(15, 15, 15, 0.98)', 
-                    border: '1px solid rgba(6, 182, 212, 0.2)',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
-                  }}
-                >
-                  {sites.map(site => (
-                    <button
-                      key={site.id}
-                      onClick={() => {
-                        setCommissionSite(site.id)
-                        setShowCommissionSiteDropdown(false)
-                      }}
-                      className="w-full px-4 py-3 text-left text-sm transition-all flex items-center gap-2"
-                      style={{ 
-                        background: commissionSite === site.id ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                        color: commissionSite === site.id ? '#06b6d4' : '#a3a3a3'
-                      }}
-                    >
-                      {commissionSite === site.id && <Check size={14} />}
-                      {site.name}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {renderSiteDropdown(commissionSite, setCommissionSite, showCommissionSiteDropdown, setShowCommissionSiteDropdown, 'cyan')}
 
           {commissionSite && (
             <>
-              {/* Broker List */}
-              <div 
-                className="p-5 rounded-2xl"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-              >
+              {/* Payment Methods List */}
+              <div className="p-5 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-semibold text-white">Araci Firmalar</h4>
-                  <span className="text-xs text-neutral-500">{filteredBrokers.length} firma kayitli</span>
+                  <h4 className="text-sm font-semibold text-white">Odeme Yontemleri</h4>
+                  <span className="text-xs text-neutral-500">
+                    {isLoadingMethods ? 'Yukleniyor...' : `${paymentMethods.length} yontem kayitli`}
+                  </span>
                 </div>
 
-                {filteredBrokers.length > 0 ? (
+                {isLoadingMethods ? (
+                  <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-cyan-400" /></div>
+                ) : paymentMethods.length > 0 ? (
                   <div className="space-y-2 mb-4">
-                    {filteredBrokers.map(broker => (
-                      <div 
-                        key={broker.id}
-                        className="flex items-center justify-between p-3 rounded-xl"
-                        style={{ background: 'rgba(255,255,255,0.03)' }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ background: 'rgba(6, 182, 212, 0.15)' }}
-                          >
-                            <Building2 size={14} className="text-cyan-400" />
+                    {paymentMethods.map((method: any) => (
+                      <div key={method.id} className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(6, 182, 212, 0.15)' }}>
+                              <Building2 size={14} className="text-cyan-400" />
+                            </div>
+                            <div>
+                              <span className="text-sm text-white">{method.name}</span>
+                              {method.excelKolonAdi && method.excelKolonAdi !== method.name && (
+                                <p className="text-[10px] text-neutral-600">Excel: {method.excelKolonAdi}</p>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-sm text-white">{broker.name}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {editingBroker === broker.id ? (
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            {editingMethod === method.id ? (
                               <input
                                 type="number"
                                 step="0.1"
-                                defaultValue={broker.rate}
-                                className="w-20 px-2 py-1 rounded-lg text-sm text-white text-center"
+                                defaultValue={method.komisyonOrani}
+                                className="w-16 px-2 py-1 rounded-lg text-xs text-white text-center"
                                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(6, 182, 212, 0.3)' }}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    updateBrokerRate(broker.id, parseFloat((e.target as HTMLInputElement).value))
-                                  }
+                                  if (e.key === 'Enter') updateMethodField(method.id, 'komisyonOrani', parseFloat((e.target as HTMLInputElement).value))
+                                  if (e.key === 'Escape') setEditingMethod(null)
                                 }}
+                                autoFocus
                               />
-                              <span className="text-xs text-neutral-500">%</span>
-                            </div>
-                          ) : (
-                            <span 
-                              className="px-3 py-1 rounded-lg text-sm font-medium cursor-pointer"
-                              style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4' }}
-                              onClick={() => setEditingBroker(broker.id)}
-                            >
-                              %{broker.rate}
+                            ) : (
+                              <span
+                                className="px-2 py-1 rounded-lg text-xs font-medium cursor-pointer"
+                                style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4' }}
+                                onClick={() => setEditingMethod(method.id)}
+                                title="Yatirim komisyonu"
+                              >
+                                Y%{method.komisyonOrani}
+                              </span>
+                            )}
+                            <span className="px-2 py-1 rounded-lg text-xs font-medium" style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24' }} title="Cekim komisyonu">
+                              C%{method.cekimKomisyonOrani}
                             </span>
-                          )}
-                          <button
-                            onClick={() => deleteBroker(broker.id)}
-                            className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20"
-                          >
-                            <Trash2 size={14} className="text-red-400" />
-                          </button>
+                            <span className="px-2 py-1 rounded-lg text-xs font-mono" style={{ background: 'rgba(255,255,255,0.05)', color: '#a3a3a3' }} title="Baslangic bakiye">
+                              {method.baslangicBakiye.toLocaleString('tr-TR')}
+                            </span>
+                            <button onClick={() => deleteMethod(method.id)} className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20">
+                              <Trash2 size={14} className="text-red-400" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-neutral-500 text-center py-4 mb-4">Bu site icin kayitli araci firma yok</p>
+                  <p className="text-sm text-neutral-500 text-center py-4 mb-4">Bu site icin kayitli odeme yontemi yok</p>
                 )}
 
-                {/* Add New Broker */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Firma adi"
-                    value={newBrokerName}
-                    onChange={(e) => setNewBrokerName(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl text-sm text-white placeholder:text-neutral-600"
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
-                  />
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="%"
-                    value={newBrokerRate}
-                    onChange={(e) => setNewBrokerRate(e.target.value)}
-                    className="w-20 px-3 py-2 rounded-xl text-sm text-white placeholder:text-neutral-600 text-center"
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
-                  />
+                {/* Add New Method */}
+                <div className="space-y-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className="text-xs text-neutral-500 mb-2">Yeni Odeme Yontemi Ekle</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Yontem adi (orn: Papara)"
+                      value={newMethodName}
+                      onChange={(e) => setNewMethodName(e.target.value)}
+                      className="px-3 py-2 rounded-xl text-sm text-white placeholder:text-neutral-600"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Excel kolon adi (opsiyonel)"
+                      value={newMethodExcelName}
+                      onChange={(e) => setNewMethodExcelName(e.target.value)}
+                      className="px-3 py-2 rounded-xl text-sm text-white placeholder:text-neutral-600"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Yatirim %"
+                      value={newMethodRate}
+                      onChange={(e) => setNewMethodRate(e.target.value)}
+                      className="px-3 py-2 rounded-xl text-sm text-white placeholder:text-neutral-600 text-center"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    />
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Cekim %"
+                      value={newMethodCekimRate}
+                      onChange={(e) => setNewMethodCekimRate(e.target.value)}
+                      className="px-3 py-2 rounded-xl text-sm text-white placeholder:text-neutral-600 text-center"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Baslangic bakiye"
+                      value={newMethodBakiye}
+                      onChange={(e) => setNewMethodBakiye(e.target.value)}
+                      className="px-3 py-2 rounded-xl text-sm text-white placeholder:text-neutral-600 text-center"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    />
+                  </div>
                   <button
-                    onClick={addBroker}
-                    className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2"
+                    onClick={addPaymentMethod}
+                    disabled={!newMethodName}
+                    className="w-full px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                     style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}
                   >
                     <Plus size={14} />
@@ -4694,15 +4849,11 @@ function VeriYuklemeContent() {
               </div>
 
               {/* Commission Calculator */}
-              <div 
-                className="p-5 rounded-2xl"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-              >
+              <div className="p-5 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <h4 className="text-sm font-semibold text-white mb-4">Komisyon Hesaplayici</h4>
                 <p className="text-xs text-neutral-500 mb-4">
-                  Formul: Net Yatirim = Brut Yatirim - (Brut Yatirim × Komisyon Orani / 100)
+                  Formul: Net Yatirim = Brut Yatirim - (Brut Yatirim x Komisyon Orani / 100)
                 </p>
-                
                 <div className="flex gap-3 mb-4">
                   <input
                     type="number"
@@ -4713,18 +4864,13 @@ function VeriYuklemeContent() {
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
                   />
                 </div>
-
-                {testGrossAmount && filteredBrokers.length > 0 && (
+                {testGrossAmount && paymentMethods.length > 0 && (
                   <div className="space-y-2">
-                    {filteredBrokers.map(broker => {
-                      const { commission, netAmount } = calculateCommission(parseFloat(testGrossAmount), broker.rate)
+                    {paymentMethods.map((method: any) => {
+                      const { commission, netAmount } = calculateCommission(parseFloat(testGrossAmount), method.komisyonOrani)
                       return (
-                        <div 
-                          key={broker.id}
-                          className="flex items-center justify-between p-3 rounded-xl"
-                          style={{ background: 'rgba(255,255,255,0.03)' }}
-                        >
-                          <span className="text-sm text-neutral-400">{broker.name} (%{broker.rate})</span>
+                        <div key={method.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                          <span className="text-sm text-neutral-400">{method.name} (%{method.komisyonOrani})</span>
                           <div className="flex items-center gap-4 text-sm">
                             <span className="text-red-400">-{commission.toLocaleString('tr-TR')} TL</span>
                             <span className="text-emerald-400 font-medium">{netAmount.toLocaleString('tr-TR')} TL</span>
@@ -4993,42 +5139,45 @@ function PolicyItem({ title, description, enabled }: { title: string; descriptio
   )
 }
 
-function UploadHistoryItem({ name, date, status, site, dataType }: { name: string; date: string; status: "success" | "error"; site?: string; dataType?: string }) {
-  return (
-  <div
-  className="flex items-center justify-between p-3 rounded-xl"
-  style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)" }}
-  >
-  <div className="flex items-center gap-3">
-  <FileText className="w-5 h-5 text-neutral-500" />
-  <div>
-  <p className="text-sm font-medium text-white">{name}</p>
-  <div className="flex items-center gap-2 mt-0.5">
-  <p className="text-xs text-neutral-500">{date}</p>
-  {site && (
-    <>
-      <span className="text-neutral-600">•</span>
-      <span className="text-xs text-purple-400">{site}</span>
-    </>
-  )}
-  {dataType && (
-    <>
-      <span className="text-neutral-600">•</span>
-      <span className="text-xs text-cyan-400">{dataType}</span>
-    </>
-  )}
-  </div>
-  </div>
-  </div>
-  <span
-  className="text-xs font-medium"
-  style={{ color: status === "success" ? "#10b981" : "#ef4444" }}
-  >
-  {status === "success" ? "Basarili" : "Hata"}
-  </span>
-  </div>
-  )
+function UploadHistoryItem({ name, date, status, site, dataType }: { name: string; date: string; status: "success" | "error" | "processing"; site?: string; dataType?: string }) {
+  const statusConfig = {
+    success: { color: '#10b981', label: 'Basarili' },
+    error: { color: '#ef4444', label: 'Hata' },
+    processing: { color: '#a855f7', label: 'Isleniyor' },
   }
+  const cfg = statusConfig[status] || statusConfig.processing
+  return (
+    <div
+      className="flex items-center justify-between p-3 rounded-xl"
+      style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)" }}
+    >
+      <div className="flex items-center gap-3">
+        <FileText className="w-5 h-5 text-neutral-500" />
+        <div>
+          <p className="text-sm font-medium text-white">{name}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-neutral-500">{date}</p>
+            {site && (
+              <>
+                <span className="text-neutral-600">•</span>
+                <span className="text-xs text-purple-400">{site}</span>
+              </>
+            )}
+            {dataType && (
+              <>
+                <span className="text-neutral-600">•</span>
+                <span className="text-xs text-cyan-400">{dataType}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <span className="text-xs font-medium" style={{ color: cfg.color }}>
+        {cfg.label}
+      </span>
+    </div>
+  )
+}
 
 function LogRow({ user, action, ip, time, status }: { user: string; action: string; ip: string; time: string; status: "success" | "failed" }) {
   return (

@@ -28,6 +28,8 @@ model Site {
   dataUploads           DataUpload[]
   financialFlows        FinancialFlow[]
   aiAnalyses            AIAnalysis[]
+  paymentMethods        PaymentMethod[]
+  kasaSnapshots         KasaSnapshot[]
   targetedAnnouncements Announcement[]         @relation("AnnouncementTargetSite")
   shiftApprovalRequests ShiftApprovalRequest[] @relation("ShiftApprovalRequests")
   masterPanelSettings   MasterPanelSettings?   @relation("MasterPanelSettings")
@@ -368,6 +370,7 @@ model DataUpload {
   site           Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
   financialFlows FinancialFlow[]
   aiAnalyses     AIAnalysis[]
+  kasaSnapshots  KasaSnapshot[]
 
   @@index([siteId])
   @@index([status])
@@ -396,6 +399,48 @@ model FinancialFlow {
   @@unique([siteId, date])
   @@index([siteId, month])
   @@index([date])
+}
+
+// Ödeme Yöntemi / Aracı Firma - Payment Method Configuration
+model PaymentMethod {
+  id                  String   @id @default(cuid())
+  siteId              String
+  name                String
+  excelKolonAdi       String   @default("")
+  komisyonOrani       Float    @default(0)
+  cekimKomisyonOrani  Float    @default(0)
+  baslangicBakiye     Float    @default(0)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, name])
+  @@index([siteId])
+  @@index([isActive])
+}
+
+// Kasa Snapshot - Günlük/Haftalık Kasa Görüntüsü
+model KasaSnapshot {
+  id            String   @id @default(cuid())
+  siteId        String
+  snapshotDate  DateTime @db.Date
+  snapshotHour  String   @default("daily")
+  totalKasa     Float    @default(0)
+  totalYatirim  Float    @default(0)
+  totalKomisyon Float    @default(0)
+  totalCekim    Float    @default(0)
+  details       Json     @default("[]")
+  dataUploadId  String?
+  createdAt     DateTime @default(now())
+
+  site       Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  dataUpload DataUpload? @relation(fields: [dataUploadId], references: [id], onDelete: SetNull)
+
+  @@unique([siteId, snapshotDate, snapshotHour])
+  @@index([siteId, snapshotDate])
+  @@index([snapshotDate])
 }
 
 // AI Analyst - Yapay Zeka Analiz Raporları
