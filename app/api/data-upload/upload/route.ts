@@ -57,7 +57,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const uploadsDir = join(process.cwd(), "uploads")
+    const uploadsBaseDir = process.env.VERCEL ? "/tmp" : process.cwd()
+    const uploadsDir = join(uploadsBaseDir, "uploads")
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
     }
@@ -69,21 +70,32 @@ export async function POST(req: NextRequest) {
       const buffer = Buffer.from(bytes)
       const fileName = `${Date.now()}-${index}-${file.name}`
       const filePath = join(uploadsDir, fileName)
-      await writeFile(filePath, buffer)
+      try {
+        await writeFile(filePath, buffer)
+      } catch (error) {
+        console.error("File write error:", error)
+        return NextResponse.json(
+          { error: "Dosya kaydedilemedi" },
+          { status: 500 }
+        )
+      }
+
+      const validModules = ["FINANS", "SPOR", "BON", "CASINO", "GENEL", "PLAYERS", "UNASSIGNED"]
+      const safeModule = validModules.includes(analyticModule) ? analyticModule : "FINANS"
 
       const upload = await basePrisma.dataUpload.create({
         data: {
           siteId,
-          uploadedByEmail: auth.email,
+          uploadedByEmail: auth.userId,
           fileName: file.name,
           fileType: fileType as any,
-          analyticModule: analyticModule as any,
+          analyticModule: safeModule as any,
           fileSize: file.size,
           status: "PENDING",
           metaData: {
             originalName: file.name,
             savedAs: fileName,
-            uploadedBy: auth.name,
+            uploadedBy: auth.userId,
             snapshotDate: snapshotDateStr || null,
             snapshotHour,
             batchIndex: index,
@@ -117,9 +129,10 @@ export async function POST(req: NextRequest) {
       uploads,
     })
   } catch (error) {
-    console.error("Upload error:", error)
+    const errMsg = error instanceof Error ? error.message : String(error)
+    console.error("Upload error:", errMsg, error)
     return NextResponse.json(
-      { error: "Yükleme başarısız" },
+      { error: `Yükleme başarısız: ${errMsg.slice(0, 200)}` },
       { status: 500 }
     )
   }

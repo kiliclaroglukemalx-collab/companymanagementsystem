@@ -137,7 +137,15 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
         body: formData,
       })
 
-      const data = await res.json()
+      const rawText = await res.text()
+      let data: any = null
+      if (rawText) {
+        try {
+          data = JSON.parse(rawText)
+        } catch {
+          data = null
+        }
+      }
 
       if (res.ok) {
         const uploadedCount = Array.isArray(data.uploads)
@@ -160,9 +168,12 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
         // Reload recent uploads
         loadRecentUploads()
       } else {
+        const fallbackMessage = rawText
+          ? rawText.slice(0, 200)
+          : TR.dataUpload.uploadFailed
         setUploadStatus({
           type: "error",
-          message: data.error || TR.dataUpload.uploadFailed
+          message: data?.error || fallbackMessage
         })
       }
     } catch (error) {
