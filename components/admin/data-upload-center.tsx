@@ -327,7 +327,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
             <select
               value={selectedSiteId}
               onChange={(e) => setSelectedSiteId(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={isUploading}
             >
               <option value="">{TR.dataUpload.selectSite}</option>
@@ -347,7 +347,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
             <select
               value={selectedFileType}
               onChange={(e) => setSelectedFileType(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={isUploading}
             >
               <option value="EXCEL">{TR.dataUpload.fileTypes.EXCEL}</option>
@@ -364,7 +364,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
             <select
               value={selectedModule}
               onChange={(e) => setSelectedModule(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={isUploading}
             >
               <option value="UNASSIGNED">{TR.dataUpload.modules.UNASSIGNED}</option>
@@ -389,7 +389,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
               multiple
               onChange={handleFileChange}
               disabled={isUploading}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             {selectedFiles.length > 0 && (
               <p className="mt-2 text-sm text-slate-600">
@@ -628,7 +628,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
                               <select
                                 value={roleEntry.role}
                                 onChange={(e) => updateRoleSelection(upload.id, moduleValue, e.target.value)}
-                                className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                                className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm text-slate-900"
                               >
                                 <option value="UNSPECIFIED">Rol seç</option>
                                 {roleOptions.map((role) => (
@@ -643,7 +643,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
                                   value={roleEntry.customRole}
                                   onChange={(e) => updateCustomRole(upload.id, moduleValue, e.target.value)}
                                   placeholder="Özel rol girin"
-                                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm flex-1"
+                                  className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm text-slate-900 placeholder:text-slate-400 flex-1"
                                 />
                               )}
                             </div>
