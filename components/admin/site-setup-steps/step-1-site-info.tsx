@@ -76,8 +76,8 @@ export const Step1SiteInfo = memo(function Step1SiteInfo({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">{TR.siteSetup.step1Title}</h3>
-        <p className="mt-1 text-sm text-slate-600">{TR.siteSetup.step1Description}</p>
+        <h3 className="text-lg font-semibold text-foreground">{TR.siteSetup.step1Title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{TR.siteSetup.step1Description}</p>
       </div>
 
       <div className="space-y-2">
@@ -90,7 +90,7 @@ export const Step1SiteInfo = memo(function Step1SiteInfo({
           placeholder={TR.siteSetup.siteNamePlaceholder}
           autoFocus
         />
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="text-sm text-red-400">{error}</p> : null}
       </div>
     </div>
   )

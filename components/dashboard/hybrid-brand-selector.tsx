@@ -3,13 +3,13 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, Search, Building2, Check, X } from "lucide-react"
-import { brands, type Brand } from "@/lib/dashboard-data"
+import { type Brand } from "@/lib/dashboard-data"
 import { useSite } from "@/lib/site-context"
 
 const AUTO_CYCLE_INTERVAL = 5000 // 5 seconds
 
 export function HybridBrandSelector() {
-  const { selectedSite: selectedBrand, setSelectedSite: onBrandChange } = useSite()
+  const { selectedSite: selectedBrand, setSelectedSite: onBrandChange, sites } = useSite()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -19,14 +19,22 @@ export function HybridBrandSelector() {
   const inputRef = useRef<HTMLInputElement>(null)
   const autoCycleTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const currentIndex = brands.findIndex((b) => b.id === selectedBrand.id)
+  const availableSites = useMemo(() => {
+    if (sites.length > 0) return sites
+    return selectedBrand ? [selectedBrand] : []
+  }, [sites, selectedBrand])
+
+  const currentIndex = useMemo(() => {
+    const index = availableSites.findIndex((b) => b.id === selectedBrand.id)
+    return index >= 0 ? index : 0
+  }, [availableSites, selectedBrand.id])
 
   const filteredBrands = useMemo(() => {
-    if (!searchQuery.trim()) return brands
-    return brands.filter((brand) =>
+    if (!searchQuery.trim()) return availableSites
+    return availableSites.filter((brand) =>
       brand.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
-  }, [searchQuery])
+  }, [searchQuery, availableSites])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -47,7 +55,7 @@ export function HybridBrandSelector() {
 
   // Auto-cycle effect - Ghost Cycle
   useEffect(() => {
-    if (isSearchOpen || isAutoCyclePaused) {
+    if (isSearchOpen || isAutoCyclePaused || availableSites.length <= 1) {
       if (autoCycleTimeoutRef.current) {
         clearTimeout(autoCycleTimeoutRef.current)
       }
@@ -55,9 +63,12 @@ export function HybridBrandSelector() {
     }
 
     autoCycleTimeoutRef.current = setTimeout(() => {
-      const nextIndex = currentIndex === brands.length - 1 ? 0 : currentIndex + 1
+      const nextIndex = currentIndex === availableSites.length - 1 ? 0 : currentIndex + 1
       setSlideDirection("right")
-      triggerMorphTransition(brands[nextIndex])
+      const nextSite = availableSites[nextIndex]
+      if (nextSite) {
+        triggerMorphTransition(nextSite)
+      }
     }, AUTO_CYCLE_INTERVAL)
 
     return () => {
@@ -65,7 +76,7 @@ export function HybridBrandSelector() {
         clearTimeout(autoCycleTimeoutRef.current)
       }
     }
-  }, [isSearchOpen, isAutoCyclePaused, currentIndex])
+  }, [isSearchOpen, isAutoCyclePaused, currentIndex, availableSites])
 
   // Pause auto-cycle temporarily on user interaction
   const pauseAutoCycle = useCallback(() => {
@@ -92,18 +103,26 @@ export function HybridBrandSelector() {
   }, [selectedBrand.id, onBrandChange])
 
   const handlePrevious = useCallback(() => {
+    if (availableSites.length === 0) return
     pauseAutoCycle()
     setSlideDirection("left")
-    const prevIndex = currentIndex === 0 ? brands.length - 1 : currentIndex - 1
-    triggerMorphTransition(brands[prevIndex])
-  }, [currentIndex, triggerMorphTransition, pauseAutoCycle])
+    const prevIndex = currentIndex === 0 ? availableSites.length - 1 : currentIndex - 1
+    const previousSite = availableSites[prevIndex]
+    if (previousSite) {
+      triggerMorphTransition(previousSite)
+    }
+  }, [availableSites, currentIndex, triggerMorphTransition, pauseAutoCycle])
 
   const handleNext = useCallback(() => {
+    if (availableSites.length === 0) return
     pauseAutoCycle()
     setSlideDirection("right")
-    const nextIndex = currentIndex === brands.length - 1 ? 0 : currentIndex + 1
-    triggerMorphTransition(brands[nextIndex])
-  }, [currentIndex, triggerMorphTransition, pauseAutoCycle])
+    const nextIndex = currentIndex === availableSites.length - 1 ? 0 : currentIndex + 1
+    const nextSite = availableSites[nextIndex]
+    if (nextSite) {
+      triggerMorphTransition(nextSite)
+    }
+  }, [availableSites, currentIndex, triggerMorphTransition, pauseAutoCycle])
 
   const handleSelectFromList = (brand: Brand) => {
     pauseAutoCycle()
@@ -397,7 +416,7 @@ export function HybridBrandSelector() {
               {/* Footer */}
               <div className="px-5 py-3 border-t border-neutral-800/50 bg-neutral-900/30">
                 <span className="text-[10px] text-neutral-600 tracking-wider uppercase">
-                  {brands.length} site mevcut • Ok tuslari ile gezin
+                  {availableSites.length} site mevcut • Ok tuslari ile gezin
                 </span>
               </div>
             </motion.div>

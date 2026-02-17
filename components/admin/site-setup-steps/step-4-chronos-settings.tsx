@@ -57,8 +57,8 @@ export const Step4ChronosSettings = memo(function Step4ChronosSettings({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">{TR.siteSetup.step4Title}</h3>
-        <p className="mt-1 text-sm text-slate-600">{TR.siteSetup.step4Description}</p>
+        <h3 className="text-lg font-semibold text-foreground">{TR.siteSetup.step4Title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{TR.siteSetup.step4Description}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -133,10 +133,10 @@ export const Step4ChronosSettings = memo(function Step4ChronosSettings({
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+      <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 p-4">
         <div>
-          <p className="font-medium text-slate-900">{TR.siteSetup.requiresApprovalLabel}</p>
-          <p className="text-sm text-slate-600">{TR.siteSetup.requiresApprovalDescription}</p>
+          <p className="font-medium text-foreground">{TR.siteSetup.requiresApprovalLabel}</p>
+          <p className="text-sm text-muted-foreground">{TR.siteSetup.requiresApprovalDescription}</p>
         </div>
         <Switch
           checked={chronosSettings.requiresApproval}
@@ -149,11 +149,11 @@ export const Step4ChronosSettings = memo(function Step4ChronosSettings({
         />
       </div>
 
-      {errors.chronos ? <p className="text-sm text-red-600">{errors.chronos}</p> : null}
+      {errors.chronos ? <p className="text-sm text-red-400">{errors.chronos}</p> : null}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h4 className="font-medium text-slate-900">{TR.siteSetup.shiftDefinitionsLabel}</h4>
+          <h4 className="font-medium text-foreground">{TR.siteSetup.shiftDefinitionsLabel}</h4>
           <Button type="button" variant="outline" onClick={handleAddShift} className="gap-2">
             <Plus className="h-4 w-4" />
             {TR.siteSetup.addShiftDefinition}
@@ -162,7 +162,10 @@ export const Step4ChronosSettings = memo(function Step4ChronosSettings({
 
         <div className="space-y-3">
           {shiftDefinitions.map((shift, index) => (
-            <div key={`${index}-${shift.name}`} className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-12">
+            <div
+              key={`${index}-${shift.name}`}
+              className="grid gap-2 rounded-lg border border-border bg-muted/20 p-3 md:grid-cols-12"
+            >
               <div className="space-y-1 md:col-span-4">
                 <Label>{TR.siteSetup.shiftNameLabel}</Label>
                 <Input
@@ -217,7 +220,7 @@ export const Step4ChronosSettings = memo(function Step4ChronosSettings({
                   disabled={shiftDefinitions.length <= 1}
                   aria-label={TR.siteSetup.removeShiftDefinition}
                 >
-                  <Trash2 className="h-4 w-4 text-red-600" />
+                  <Trash2 className="h-4 w-4 text-red-400" />
                 </Button>
               </div>
             </div>
@@ -225,7 +228,7 @@ export const Step4ChronosSettings = memo(function Step4ChronosSettings({
         </div>
 
         {errors.shiftDefinitions ? (
-          <p className="text-sm text-red-600">{errors.shiftDefinitions}</p>
+          <p className="text-sm text-red-400">{errors.shiftDefinitions}</p>
         ) : null}
       </div>
     </div>

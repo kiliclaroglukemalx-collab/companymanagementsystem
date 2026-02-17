@@ -323,21 +323,21 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? handleClose() : null)}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="max-h-[92vh] overflow-y-auto border-border bg-background sm:max-w-4xl">
         {result ? (
           <div className="space-y-6">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-green-700">
+              <DialogTitle className="flex items-center gap-2 text-emerald-400">
                 <CheckCircle2 className="h-5 w-5" />
                 {TR.siteSetup.setupCompletedTitle}
               </DialogTitle>
               <DialogDescription>{TR.siteSetup.setupCompletedDescription}</DialogDescription>
             </DialogHeader>
 
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-sm text-slate-600">{TR.siteSetup.temporaryPasswordLabel}</p>
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <p className="text-sm text-muted-foreground">{TR.siteSetup.temporaryPasswordLabel}</p>
               <div className="mt-2 flex items-center gap-2">
-                <code className="flex-1 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900">
+                <code className="flex-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm font-semibold text-foreground">
                   {result.tempPassword}
                 </code>
                 <Button type="button" variant="outline" onClick={handleCopyPassword}>
@@ -347,17 +347,17 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
               </div>
             </div>
 
-            <div className="rounded-lg border border-slate-200 p-4 text-sm text-slate-700">
+            <div className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
               <p>
-                <span className="font-medium text-slate-900">{TR.siteSetup.createdSiteLabel}: </span>
+                <span className="font-medium text-foreground">{TR.siteSetup.createdSiteLabel}: </span>
                 {result.site.name}
               </p>
               <p>
-                <span className="font-medium text-slate-900">{TR.siteSetup.createdDepartmentsLabel}: </span>
+                <span className="font-medium text-foreground">{TR.siteSetup.createdDepartmentsLabel}: </span>
                 {result.departments.length}
               </p>
               <p>
-                <span className="font-medium text-slate-900">{TR.siteSetup.createdAdminLabel}: </span>
+                <span className="font-medium text-foreground">{TR.siteSetup.createdAdminLabel}: </span>
                 {result.adminUser.name}
               </p>
             </div>
@@ -380,7 +380,7 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
                 <Badge variant="outline">
                   {TR.siteSetup.stepLabel} {step + 1} / {STEP_TITLES.length}
                 </Badge>
-                <span className="text-sm font-medium text-slate-700">{STEP_TITLES[step]}</span>
+                <span className="text-sm font-medium text-muted-foreground">{STEP_TITLES[step]}</span>
               </div>
               <Progress value={progressValue} />
             </div>

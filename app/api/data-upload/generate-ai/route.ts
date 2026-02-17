@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerAuthContext } from "@/lib/server-auth"
 import { basePrisma } from "@/lib/prisma"
 import { runAiAnalysis } from "@/lib/ai-analysis/service"
+import { resolveStorageModule } from "@/lib/ai-analysis/module-mapper"
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +17,11 @@ export async function POST(req: NextRequest) {
 
     if (!uploadId || !siteId || !module) {
       return NextResponse.json({ error: "Eksik parametreler" }, { status: 400 })
+    }
+
+    const storageModule = resolveStorageModule(module)
+    if (!storageModule) {
+      return NextResponse.json({ error: "Gecersiz module" }, { status: 400 })
     }
 
     const upload = await basePrisma.dataUpload.findUnique({
@@ -33,7 +39,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Yukleme bulunamadi" }, { status: 404 })
     }
 
-    const payload = buildAnalyzePayload(upload)
+    const assignments = await basePrisma.dataUploadAssignment.findMany({
+      where: {
+        analyticModule: storageModule as any,
+        dataUpload: {
+          siteId,
+          status: "COMPLETED",
+        },
+      },
+      include: {
+        dataUpload: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    const payload = buildAnalyzePayload(upload, assignments)
     const aiResult = await runAiAnalysis({
       module,
       payload,
@@ -82,7 +104,19 @@ function buildAnalyzePayload(upload: {
     netProfit: number
     cumulativeProfit: number
   }>
-}) {
+}, assignments: Array<{
+  id: string
+  analyticModule: string
+  fileRole: string
+  dataUpload: {
+    id: string
+    fileName: string
+    fileType: string
+    createdAt: Date
+    status: string
+    metaData: unknown
+  }
+}>) {
   const flowCount = upload.financialFlows.length
   const totals = upload.financialFlows.reduce(
     (acc, flow) => {
@@ -134,6 +168,44 @@ function buildAnalyzePayload(upload: {
     meta_data: upload.metaData ?? {},
   }
 
+  const uploadedFilesContext =
+    assignments.length > 0
+      ? assignments.map((assignment) => ({
+          file_name: assignment.dataUpload.fileName,
+          file_type: assignment.dataUpload.fileType,
+          file_role: assignment.fileRole,
+          module: assignment.analyticModule,
+          upload_id: assignment.dataUpload.id,
+          upload_status: assignment.dataUpload.status,
+          upload_created_at: assignment.dataUpload.createdAt.toISOString(),
+          period_start:
+            typeof (assignment.dataUpload.metaData as any)?.period_start === "string"
+              ? (assignment.dataUpload.metaData as any).period_start
+              : typeof (assignment.dataUpload.metaData as any)?.snapshotDate === "string"
+                ? (assignment.dataUpload.metaData as any).snapshotDate
+                : null,
+          period_end:
+            typeof (assignment.dataUpload.metaData as any)?.period_end === "string"
+              ? (assignment.dataUpload.metaData as any).period_end
+              : typeof (assignment.dataUpload.metaData as any)?.snapshotDate === "string"
+                ? (assignment.dataUpload.metaData as any).snapshotDate
+                : null,
+          meta_data: assignment.dataUpload.metaData ?? {},
+        }))
+      : [
+          {
+            file_name: upload.fileName,
+            file_type: upload.fileType,
+            file_role: "UNSPECIFIED",
+            module: upload.analyticModule,
+            upload_id: upload.id,
+            upload_created_at: upload.createdAt.toISOString(),
+            period_start: periodStart,
+            period_end: periodEnd,
+            meta_data: upload.metaData ?? {},
+          },
+        ]
+
   return {
     module_data: moduleData,
     global_context: {
@@ -141,14 +213,8 @@ function buildAnalyzePayload(upload: {
       site_name: upload.site.name,
       upload_id: upload.id,
       upload_created_at: upload.createdAt.toISOString(),
+      assignment_count: assignments.length,
     },
-    uploaded_files_context: [
-      {
-        file_name: upload.fileName,
-        file_type: upload.fileType,
-        period_start: periodStart,
-        period_end: periodEnd,
-      },
-    ],
+    uploaded_files_context: uploadedFilesContext,
   }
 }

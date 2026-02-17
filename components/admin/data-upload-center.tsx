@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { AuthContext } from "@/lib/auth"
 import { TR } from "@/lib/tr-constants"
+import { CUSTOM_ROLE_VALUE, getRoleOptions } from "@/lib/data-upload/file-role-config"
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -10,25 +11,72 @@ interface DataUploadCenterProps {
   auth: AuthContext
 }
 
+type AssignmentDraft = {
+  modules: string[]
+  roles: Record<string, { role: string; customRole: string }>
+}
+
 export function DataUploadCenter({ auth }: DataUploadCenterProps) {
   const [selectedSiteId, setSelectedSiteId] = useState<string>("")
   const [selectedFileType, setSelectedFileType] = useState<string>("EXCEL")
-  const [selectedModule, setSelectedModule] = useState<string>("FINANS")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedModule, setSelectedModule] = useState<string>("UNASSIGNED")
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<{
+    type: "success" | "error" | null
+    message: string
+  }>({ type: null, message: "" })
+  const [mappingStatus, setMappingStatus] = useState<{
     type: "success" | "error" | null
     message: string
   }>({ type: null, message: "" })
   const [recentUploads, setRecentUploads] = useState<any[]>([])
   const [isLoadingUploads, setIsLoadingUploads] = useState(true)
   const [sites, setSites] = useState<any[]>([])
+  const [assignmentsDraft, setAssignmentsDraft] = useState<Record<string, AssignmentDraft>>({})
+
+  const moduleOptions = [
+    { value: "FINANS", label: TR.dataUpload.modules.FINANS },
+    { value: "SPOR", label: TR.dataUpload.modules.SPOR },
+    { value: "BON", label: TR.dataUpload.modules.BON },
+    { value: "CASINO", label: TR.dataUpload.modules.CASINO },
+    { value: "GENEL", label: TR.dataUpload.modules.GENEL },
+    { value: "PLAYERS", label: TR.dataUpload.modules.PLAYERS },
+  ]
 
   // Load sites and recent uploads on mount
   useEffect(() => {
     loadSites()
     loadRecentUploads()
   }, [])
+
+  useEffect(() => {
+    if (recentUploads.length === 0) return
+    setAssignmentsDraft((prev) => {
+      const next = { ...prev }
+      for (const upload of recentUploads) {
+        if (next[upload.id]) continue
+        const roles: AssignmentDraft["roles"] = {}
+        const modules = Array.isArray(upload.assignments)
+          ? upload.assignments.map((item: any) => item.analyticModule)
+          : []
+        if (Array.isArray(upload.assignments)) {
+          for (const assignment of upload.assignments) {
+            const moduleValue = assignment.analyticModule
+            const roleValue = assignment.fileRole || "UNSPECIFIED"
+            const roleOptions = getRoleOptions(moduleValue)
+            if (roleValue !== "UNSPECIFIED" && !roleOptions.includes(roleValue)) {
+              roles[moduleValue] = { role: CUSTOM_ROLE_VALUE, customRole: roleValue }
+            } else {
+              roles[moduleValue] = { role: roleValue, customRole: "" }
+            }
+          }
+        }
+        next[upload.id] = { modules, roles }
+      }
+      return next
+    })
+  }, [recentUploads])
 
   async function loadSites() {
     try {
@@ -58,14 +106,13 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0])
-      setUploadStatus({ type: null, message: "" })
-    }
+    const files = e.target.files ? Array.from(e.target.files) : []
+    setSelectedFiles(files)
+    setUploadStatus({ type: null, message: "" })
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || !selectedSiteId) {
+    if (selectedFiles.length === 0 || !selectedSiteId) {
       setUploadStatus({
         type: "error",
         message: "Lütfen dosya ve site seçin"
@@ -78,7 +125,9 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
 
     try {
       const formData = new FormData()
-      formData.append("file", selectedFile)
+      selectedFiles.forEach((file) => {
+        formData.append("file", file)
+      })
       formData.append("siteId", selectedSiteId)
       formData.append("fileType", selectedFileType)
       formData.append("analyticModule", selectedModule)
@@ -91,11 +140,19 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
       const data = await res.json()
 
       if (res.ok) {
+        const uploadedCount = Array.isArray(data.uploads)
+          ? data.uploads.length
+          : data.upload
+            ? 1
+            : selectedFiles.length
         setUploadStatus({
           type: "success",
-          message: TR.dataUpload.uploadSuccess
+          message:
+            uploadedCount > 1
+              ? `${uploadedCount} dosya yüklendi`
+              : TR.dataUpload.uploadSuccess
         })
-        setSelectedFile(null)
+        setSelectedFiles([])
         // Reset file input
         const fileInput = document.getElementById("file-upload") as HTMLInputElement
         if (fileInput) fileInput.value = ""
@@ -116,6 +173,91 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
       })
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  const toggleModuleAssignment = (uploadId: string, moduleValue: string, checked: boolean) => {
+    setAssignmentsDraft((prev) => {
+      const current = prev[uploadId] ?? { modules: [], roles: {} }
+      const modules = checked
+        ? Array.from(new Set([...current.modules, moduleValue]))
+        : current.modules.filter((value) => value !== moduleValue)
+      const roles = { ...current.roles }
+      if (!checked) {
+        delete roles[moduleValue]
+      } else if (!roles[moduleValue]) {
+        roles[moduleValue] = { role: "UNSPECIFIED", customRole: "" }
+      }
+      return { ...prev, [uploadId]: { modules, roles } }
+    })
+  }
+
+  const updateRoleSelection = (uploadId: string, moduleValue: string, roleValue: string) => {
+    setAssignmentsDraft((prev) => {
+      const current = prev[uploadId] ?? { modules: [], roles: {} }
+      const roles = { ...current.roles }
+      if (roleValue === CUSTOM_ROLE_VALUE) {
+        roles[moduleValue] = {
+          role: CUSTOM_ROLE_VALUE,
+          customRole: roles[moduleValue]?.customRole || "",
+        }
+      } else {
+        roles[moduleValue] = { role: roleValue, customRole: "" }
+      }
+      return { ...prev, [uploadId]: { ...current, roles } }
+    })
+  }
+
+  const updateCustomRole = (uploadId: string, moduleValue: string, customRole: string) => {
+    setAssignmentsDraft((prev) => {
+      const current = prev[uploadId] ?? { modules: [], roles: {} }
+      const roles = { ...current.roles }
+      roles[moduleValue] = { role: CUSTOM_ROLE_VALUE, customRole }
+      return { ...prev, [uploadId]: { ...current, roles } }
+    })
+  }
+
+  const saveAssignments = async (uploadId: string) => {
+    try {
+      const draft = assignmentsDraft[uploadId] ?? { modules: [], roles: {} }
+      const assignments = draft.modules.map((moduleValue) => {
+        const roleEntry = draft.roles[moduleValue]
+        let fileRole = roleEntry?.role || "UNSPECIFIED"
+        if (fileRole === CUSTOM_ROLE_VALUE) {
+          fileRole = roleEntry?.customRole?.trim() || "UNSPECIFIED"
+        }
+        return { analyticModule: moduleValue, fileRole }
+      })
+
+      const res = await fetch("/api/data-upload/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uploadId,
+          assignments,
+          replaceExisting: true,
+        }),
+      })
+
+      if (res.ok) {
+        setMappingStatus({
+          type: "success",
+          message: "Dosya eslemeleri kaydedildi",
+        })
+        loadRecentUploads()
+      } else {
+        const data = await res.json()
+        setMappingStatus({
+          type: "error",
+          message: data.error || "Esleme kaydedilemedi",
+        })
+      }
+    } catch (error) {
+      console.error("Assignment save error:", error)
+      setMappingStatus({
+        type: "error",
+        message: "Esleme kaydedilemedi",
+      })
     }
   }
 
@@ -225,6 +367,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={isUploading}
             >
+              <option value="UNASSIGNED">{TR.dataUpload.modules.UNASSIGNED}</option>
               <option value="FINANS">{TR.dataUpload.modules.FINANS}</option>
               <option value="SPOR">{TR.dataUpload.modules.SPOR}</option>
               <option value="BON">{TR.dataUpload.modules.BON}</option>
@@ -243,13 +386,28 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
               id="file-upload"
               type="file"
               accept=".xlsx,.xls,.csv,.json"
+              multiple
               onChange={handleFileChange}
               disabled={isUploading}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
-            {selectedFile && (
+            {selectedFiles.length > 0 && (
               <p className="mt-2 text-sm text-slate-600">
-                Seçili: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                Seçili: {selectedFiles.length} dosya (
+                {(selectedFiles.reduce((sum, file) => sum + file.size, 0) / 1024).toFixed(2)} KB)
+                {selectedFiles.length > 0 && (
+                  <>
+                    {" "}
+                    -{" "}
+                    {selectedFiles
+                      .slice(0, 3)
+                      .map((file) => file.name)
+                      .join(", ")}
+                    {selectedFiles.length > 3
+                      ? ` +${selectedFiles.length - 3}`
+                      : ""}
+                  </>
+                )}
               </p>
             )}
           </div>
@@ -259,10 +417,10 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
         <div className="mt-6">
           <button
             onClick={handleUpload}
-            disabled={isUploading || !selectedFile || !selectedSiteId}
+            disabled={isUploading || selectedFiles.length === 0 || !selectedSiteId}
             className={cn(
               "w-full md:w-auto px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all",
-              isUploading || !selectedFile || !selectedSiteId
+              isUploading || selectedFiles.length === 0 || !selectedSiteId
                 ? "bg-slate-300 text-slate-500 cursor-not-allowed"
                 : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl"
             )}
@@ -393,6 +551,110 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Analysis Mapping */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-slate-600" />
+          Dosya Eşleme
+        </h2>
+
+        {mappingStatus.type && (
+          <div className={cn(
+            "mb-4 p-4 rounded-lg flex items-center gap-2",
+            mappingStatus.type === "success"
+              ? "bg-green-50 border border-green-200 text-green-800"
+              : "bg-red-50 border border-red-200 text-red-800"
+          )}>
+            {mappingStatus.type === "success" ? (
+              <CheckCircle2 className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
+            )}
+            <span className="text-sm font-medium">{mappingStatus.message}</span>
+          </div>
+        )}
+
+        {recentUploads.length === 0 ? (
+          <p className="text-sm text-slate-600">Henüz yükleme yok</p>
+        ) : (
+          <div className="space-y-6">
+            {recentUploads.map((upload) => {
+              const draft = assignmentsDraft[upload.id] ?? { modules: [], roles: {} }
+              return (
+                <div key={upload.id} className="border border-slate-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{upload.fileName}</p>
+                      <p className="text-xs text-slate-500">
+                        Site: {upload.site?.name || "-"} · Yükleme: {new Date(upload.createdAt).toLocaleDateString("tr-TR")}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => saveAssignments(upload.id)}
+                      className="px-3 py-1 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                    >
+                      Eşlemeyi Kaydet
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {moduleOptions.map((option) => (
+                      <label key={option.value} className="flex items-center gap-2 text-sm text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={draft.modules.includes(option.value)}
+                          onChange={(e) => toggleModuleAssignment(upload.id, option.value, e.target.checked)}
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+
+                  {draft.modules.length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      {draft.modules.map((moduleValue) => {
+                        const roleOptions = getRoleOptions(moduleValue)
+                        const roleEntry = draft.roles[moduleValue] ?? { role: "UNSPECIFIED", customRole: "" }
+                        return (
+                          <div key={moduleValue} className="flex flex-col gap-2">
+                            <div className="text-xs font-semibold text-slate-600">
+                              {TR.dataUpload.modules[moduleValue as keyof typeof TR.dataUpload.modules]}
+                            </div>
+                            <div className="flex flex-col md:flex-row gap-2">
+                              <select
+                                value={roleEntry.role}
+                                onChange={(e) => updateRoleSelection(upload.id, moduleValue, e.target.value)}
+                                className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                              >
+                                <option value="UNSPECIFIED">Rol seç</option>
+                                {roleOptions.map((role) => (
+                                  <option key={role} value={role}>
+                                    {role}
+                                  </option>
+                                ))}
+                                <option value={CUSTOM_ROLE_VALUE}>Özel...</option>
+                              </select>
+                              {roleEntry.role === CUSTOM_ROLE_VALUE && (
+                                <input
+                                  value={roleEntry.customRole}
+                                  onChange={(e) => updateCustomRole(upload.id, moduleValue, e.target.value)}
+                                  placeholder="Özel rol girin"
+                                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm flex-1"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

@@ -21,6 +21,14 @@ export async function GET(req: NextRequest) {
             name: true,
           }
         },
+        assignments: {
+          select: {
+            id: true,
+            analyticModule: true,
+            fileRole: true,
+            createdAt: true,
+          },
+        },
         _count: {
           select: {
             aiAnalyses: true,

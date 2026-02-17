@@ -29,8 +29,8 @@ export const Step3AdminUser = memo(function Step3AdminUser({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">{TR.siteSetup.step3Title}</h3>
-        <p className="mt-1 text-sm text-slate-600">{TR.siteSetup.step3Description}</p>
+        <h3 className="text-lg font-semibold text-foreground">{TR.siteSetup.step3Title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{TR.siteSetup.step3Description}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -42,7 +42,7 @@ export const Step3AdminUser = memo(function Step3AdminUser({
             onChange={(event) => onChange({ ...adminUser, name: event.target.value })}
             placeholder={TR.siteSetup.adminNamePlaceholder}
           />
-          {errors.adminName ? <p className="text-sm text-red-600">{errors.adminName}</p> : null}
+          {errors.adminName ? <p className="text-sm text-red-400">{errors.adminName}</p> : null}
         </div>
 
         <div className="space-y-2">
@@ -54,7 +54,7 @@ export const Step3AdminUser = memo(function Step3AdminUser({
             onChange={(event) => onChange({ ...adminUser, email: event.target.value })}
             placeholder={TR.siteSetup.adminEmailPlaceholder}
           />
-          {errors.adminEmail ? <p className="text-sm text-red-600">{errors.adminEmail}</p> : null}
+          {errors.adminEmail ? <p className="text-sm text-red-400">{errors.adminEmail}</p> : null}
         </div>
       </div>
 
@@ -104,7 +104,7 @@ export const Step3AdminUser = memo(function Step3AdminUser({
             </SelectContent>
           </Select>
           {errors.adminDepartment ? (
-            <p className="text-sm text-red-600">{errors.adminDepartment}</p>
+            <p className="text-sm text-red-400">{errors.adminDepartment}</p>
           ) : null}
         </div>
       </div>

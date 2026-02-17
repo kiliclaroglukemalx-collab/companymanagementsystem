@@ -57,8 +57,8 @@ export const Step2Departments = memo(function Step2Departments({
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">{TR.siteSetup.step2Title}</h3>
-          <p className="mt-1 text-sm text-slate-600">{TR.siteSetup.step2Description}</p>
+          <h3 className="text-lg font-semibold text-foreground">{TR.siteSetup.step2Title}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{TR.siteSetup.step2Description}</p>
         </div>
         <Button type="button" variant="outline" onClick={handleResetStandard} className="gap-2">
           <RotateCcw className="h-4 w-4" />
@@ -83,7 +83,7 @@ export const Step2Departments = memo(function Step2Departments({
               disabled={departments.length <= 1}
               aria-label={TR.siteSetup.removeDepartment}
             >
-              <Trash2 className="h-4 w-4 text-red-600" />
+              <Trash2 className="h-4 w-4 text-red-400" />
             </Button>
           </div>
         ))}
@@ -94,7 +94,7 @@ export const Step2Departments = memo(function Step2Departments({
         {TR.siteSetup.addDepartment}
       </Button>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-red-400">{error}</p> : null}
     </div>
   )
 })

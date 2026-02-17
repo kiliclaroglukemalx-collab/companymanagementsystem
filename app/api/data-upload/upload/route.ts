@@ -24,14 +24,22 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData()
-    const file = formData.get("file") as File
+    let fileEntries = formData.getAll("file")
+    if (fileEntries.length === 0) {
+      fileEntries = formData.getAll("files")
+    }
+    const files = fileEntries.filter((entry): entry is File => entry instanceof File)
     const siteId = formData.get("siteId") as string
     const fileType = formData.get("fileType") as string
-    const analyticModule = formData.get("analyticModule") as string
+    const analyticModuleInput = formData.get("analyticModule") as string | null
+    const analyticModule =
+      analyticModuleInput && analyticModuleInput.trim().length > 0
+        ? analyticModuleInput
+        : "UNASSIGNED"
     const snapshotDateStr = formData.get("snapshotDate") as string | null
     const snapshotHour = (formData.get("snapshotHour") as string) || "daily"
 
-    if (!file || !siteId || !fileType || !analyticModule) {
+    if (files.length === 0 || !siteId || !fileType) {
       return NextResponse.json(
         { error: "Eksik parametreler" },
         { status: 400 }
@@ -49,56 +57,64 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
     const uploadsDir = join(process.cwd(), "uploads")
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
     }
 
-    const fileName = `${Date.now()}-${file.name}`
-    const filePath = join(uploadsDir, fileName)
-    await writeFile(filePath, buffer)
+    const uploads = []
 
-    const upload = await basePrisma.dataUpload.create({
-      data: {
-        siteId,
-        uploadedByEmail: auth.email,
-        fileName: file.name,
-        fileType: fileType as any,
-        analyticModule: analyticModule as any,
-        fileSize: file.size,
-        status: "PENDING",
-        metaData: {
-          originalName: file.name,
-          savedAs: fileName,
-          uploadedBy: auth.name,
-          snapshotDate: snapshotDateStr || null,
-          snapshotHour,
+    for (const [index, file] of files.entries()) {
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const fileName = `${Date.now()}-${index}-${file.name}`
+      const filePath = join(uploadsDir, fileName)
+      await writeFile(filePath, buffer)
+
+      const upload = await basePrisma.dataUpload.create({
+        data: {
+          siteId,
+          uploadedByEmail: auth.email,
+          fileName: file.name,
+          fileType: fileType as any,
+          analyticModule: analyticModule as any,
+          fileSize: file.size,
+          status: "PENDING",
+          metaData: {
+            originalName: file.name,
+            savedAs: fileName,
+            uploadedBy: auth.name,
+            snapshotDate: snapshotDateStr || null,
+            snapshotHour,
+            batchIndex: index,
+            batchSize: files.length,
+          },
         },
-      },
-      include: {
-        site: true,
-      },
-    })
+        include: {
+          site: true,
+        },
+      })
 
-    processUploadedFile(
-      upload.id,
-      filePath,
-      buffer,
-      fileType,
-      analyticModule,
-      siteId,
-      snapshotDateStr,
-      snapshotHour
-    ).catch((error) => {
-      console.error("File processing error:", error)
-    })
+      processUploadedFile(
+        upload.id,
+        filePath,
+        buffer,
+        fileType,
+        analyticModule,
+        siteId,
+        snapshotDateStr,
+        snapshotHour
+      ).catch((error) => {
+        console.error("File processing error:", error)
+      })
+
+      uploads.push(upload)
+    }
 
     return NextResponse.json({
       success: true,
-      upload,
+      upload: uploads[0] ?? null,
+      uploads,
     })
   } catch (error) {
     console.error("Upload error:", error)

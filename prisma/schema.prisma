@@ -338,6 +338,7 @@ enum DataFileType {
 }
 
 enum AnalyticModule {
+  UNASSIGNED
   FINANS
   SPOR
   BON
@@ -372,10 +373,25 @@ model DataUpload {
   financialFlows FinancialFlow[]
   aiAnalyses     AIAnalysis[]
   kasaSnapshots  KasaSnapshot[]
+  assignments    DataUploadAssignment[]
 
   @@index([siteId])
   @@index([status])
   @@index([createdAt])
+}
+
+model DataUploadAssignment {
+  id             String         @id @default(cuid())
+  dataUploadId   String
+  analyticModule AnalyticModule
+  fileRole       String         @default("UNSPECIFIED")
+  createdAt      DateTime       @default(now())
+
+  dataUpload DataUpload @relation(fields: [dataUploadId], references: [id], onDelete: Cascade)
+
+  @@index([dataUploadId])
+  @@index([analyticModule])
+  @@unique([dataUploadId, analyticModule, fileRole])
 }
 
 // Para Nasıl Akıyor? - Financial Flow Data

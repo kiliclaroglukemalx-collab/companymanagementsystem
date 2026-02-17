@@ -15,7 +15,7 @@ import {
   PersonnelSkeleton,
   MonolithSkeleton 
 } from "@/components/ui/skeleton-loaders"
-import { dashboardCards, brands, type DashboardCard, type Brand } from "@/lib/dashboard-data"
+import { dashboardCards, type DashboardCard, type Brand } from "@/lib/dashboard-data"
 
 
 // Dynamic imports for heavy components - Apple style lazy loading
@@ -132,7 +132,7 @@ export default function DashboardPage() {
   }, [])
 
   return (
-    <SiteProvider initialSite={brands[0]}>
+    <SiteProvider>
       <ChronosProvider>
         <DashboardContent 
           currentTheme={currentTheme}

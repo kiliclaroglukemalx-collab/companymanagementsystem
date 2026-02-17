@@ -492,6 +492,7 @@ export const TR = {
       JSON: "JSON (.json)",
     },
     modules: {
+      UNASSIGNED: "Esleme Bekliyor",
       FINANS: "Finans Analizi",
       SPOR: "Spor Analizi",
       BON: "Bonus Analizi",
