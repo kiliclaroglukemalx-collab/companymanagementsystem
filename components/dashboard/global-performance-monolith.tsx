@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowDown, ArrowRight, Minus, Equal, Wallet, Users, Building2, Receipt, Crown } from "lucide-react"
+import { ArrowDown, ArrowRight, Minus, Equal, Wallet, Users, Building2, Receipt, Crown, Loader2 } from "lucide-react"
 
 interface FlowStep {
   id: string
@@ -18,58 +18,70 @@ interface FlowStep {
   icon: React.ElementType
 }
 
-const flowSteps: FlowStep[] = [
-  {
-    id: "deposit",
-    label: "GELEN PARA",
-    turkishLabel: "Yatirimlar",
-    description: "Musterilerden gelen toplam para",
-    value: 12847650,
-    prefix: "₺",
-    type: "income",
-    icon: Wallet,
-  },
-  {
-    id: "withdrawal",
-    label: "GIDEN PARA",
-    turkishLabel: "Cekimler",
-    description: "Musterilere odenen miktar",
-    value: 8234120,
-    prefix: "₺",
-    type: "expense",
-    icon: Users,
-  },
-  {
-    id: "commission",
-    label: "BANKA KESINTISI",
-    turkishLabel: "Komisyon",
-    description: "Odeme sistemleri payi",
-    value: 129340,
-    prefix: "₺",
-    type: "fee",
-    icon: Building2,
-  },
-  {
-    id: "expenses",
-    label: "ISLETME GIDERI",
-    turkishLabel: "Faturalar",
-    description: "Maas, kira, yazilim vs.",
-    value: 1250000,
-    prefix: "₺",
-    type: "expense",
-    icon: Receipt,
-  },
-  {
-    id: "netProfit",
-    label: "NET KAZANC",
-    turkishLabel: "Kalan Para",
-    description: "Cebimize kalan net tutar",
-    value: 3234190,
-    prefix: "₺",
-    type: "result",
-    icon: Crown,
-  },
-]
+interface FinancialSummary {
+  totalIncome: number
+  bankFees: number
+  withdrawals: number
+  operatingCosts: number
+  netProfit: number
+  cumulativeProfit: number
+  lastUpdated: string
+}
+
+function buildFlowSteps(data: FinancialSummary): FlowStep[] {
+  return [
+    {
+      id: "deposit",
+      label: "GELEN PARA",
+      turkishLabel: "Yatirimlar",
+      description: "Musterilerden gelen toplam para",
+      value: data.totalIncome,
+      prefix: "₺",
+      type: "income",
+      icon: Wallet,
+    },
+    {
+      id: "withdrawal",
+      label: "GIDEN PARA",
+      turkishLabel: "Cekimler",
+      description: "Musterilere odenen miktar",
+      value: data.withdrawals,
+      prefix: "₺",
+      type: "expense",
+      icon: Users,
+    },
+    {
+      id: "commission",
+      label: "BANKA KESINTISI",
+      turkishLabel: "Komisyon",
+      description: "Odeme sistemleri payi",
+      value: data.bankFees,
+      prefix: "₺",
+      type: "fee",
+      icon: Building2,
+    },
+    {
+      id: "expenses",
+      label: "ISLETME GIDERI",
+      turkishLabel: "Faturalar",
+      description: "Maas, kira, yazilim vs.",
+      value: data.operatingCosts,
+      prefix: "₺",
+      type: "expense",
+      icon: Receipt,
+    },
+    {
+      id: "netProfit",
+      label: "NET KAZANC",
+      turkishLabel: "Kalan Para",
+      description: "Cebimize kalan net tutar",
+      value: data.netProfit,
+      prefix: "₺",
+      type: "result",
+      icon: Crown,
+    },
+  ]
+}
 
 // Animated counter
 function AnimatedValue({ 
@@ -319,11 +331,64 @@ function MetricCard({
 export function GlobalPerformanceMonolith() {
   const [hoveredMetric, setHoveredMetric] = useState<string | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const [flowSteps, setFlowSteps] = useState<FlowStep[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 300)
-    return () => clearTimeout(timer)
+    async function fetchData() {
+      try {
+        setIsLoading(true)
+        const res = await fetch("/api/financial-flow/summary?range=monthly")
+        if (res.ok) {
+          const result = await res.json()
+          setFlowSteps(buildFlowSteps(result.summary))
+        }
+      } catch (error) {
+        console.error("Failed to load financial data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
   }, [])
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setIsVisible(true), 300)
+      return () => clearTimeout(timer)
+    }
+  }, [isLoading])
+
+  if (isLoading) {
+    return (
+      <section className="relative w-full py-16 overflow-hidden" style={{ background: "#000000" }}>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-neutral-500" />
+        </div>
+      </section>
+    )
+  }
+
+  if (flowSteps.length === 0) {
+    return (
+      <section className="relative w-full py-16 overflow-hidden" style={{ background: "#000000" }}>
+        <div className="px-10">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-neutral-500">
+              Aylik Finansal Ozet
+            </span>
+          </div>
+          <h2 className="text-[28px] font-light text-white tracking-tight">
+            Para Nasil Akiyor?
+          </h2>
+          <p className="text-[14px] text-neutral-500 mt-4">
+            Henuz finansal veri bulunamadi.
+          </p>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section 
