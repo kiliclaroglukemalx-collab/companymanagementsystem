@@ -69,7 +69,7 @@ import {
   RefreshCw,
 } from "lucide-react"
 import Image from "next/image"
-import { useTheme } from "@/lib/theme-context"
+import { useTheme, femaleThemes, maleThemes } from "@/lib/theme-context"
 
 // isManagementUser removed - now handled via isSuperAdmin React state in SettingsPanel
 
@@ -201,6 +201,7 @@ const tabs: TabItem[] = [
   { id: "taleplerim", label: "Taleplerim", icon: FileText },
   // Admin-only tabs
   { id: "yonetim-bildirim", label: "Yonetim Bildirim Merkezi", icon: Crown, isAdminOnly: true },
+  { id: "site-yonetimi", label: "Site Yonetimi", icon: Building2, isAdminOnly: true },
   { id: "kullanicilar", label: "Kullanicilar", icon: Users, isAdminOnly: true },
   { id: "yetkilendirme", label: "Yetkilendirme", icon: KeyRound, isAdminOnly: true },
   { id: "veri-yukleme", label: "Veri Yukleme Merkezi", icon: Upload, isAdminOnly: true },
@@ -1053,82 +1054,21 @@ export const employeeRequestsStore: EmployeeRequest[] = [
   },
 ]
 
-// Theme definitions
-const femaleThemes = [
-  { id: 'rose-gold', name: 'Rose Gold', gradient: 'linear-gradient(135deg, #f9a8d4, #fbbf24)', primary: '#ec4899', textDark: false },
-  { id: 'lavender', name: 'Lavender', gradient: 'linear-gradient(135deg, #ddd6fe, #c4b5fd)', primary: '#a78bfa', textDark: false },
-  { id: 'coral', name: 'Coral', gradient: 'linear-gradient(135deg, #fca5a5, #fb923c)', primary: '#f87171', textDark: false },
-  { id: 'mint', name: 'Mint', gradient: 'linear-gradient(135deg, #6ee7b7, #34d399)', primary: '#10b981', textDark: false },
-  { id: 'peach', name: 'Peach', gradient: 'linear-gradient(135deg, #fed7aa, #fdba74)', primary: '#fb923c', textDark: false },
-  { id: 'lilac', name: 'Lilac', gradient: 'linear-gradient(135deg, #e9d5ff, #d8b4fe)', primary: '#c084fc', textDark: false },
-  { id: 'cherry', name: 'Cherry', gradient: 'linear-gradient(135deg, #fda4af, #fb7185)', primary: '#f43f5e', textDark: false },
-  { id: 'aqua', name: 'Aqua', gradient: 'linear-gradient(135deg, #99f6e4, #5eead4)', primary: '#14b8a6', textDark: false },
-  { id: 'blush', name: 'Blush', gradient: 'linear-gradient(135deg, #fbcfe8, #f9a8d4)', primary: '#ec4899', textDark: false },
-  { id: 'sky', name: 'Sky', gradient: 'linear-gradient(135deg, #bae6fd, #7dd3fc)', primary: '#38bdf8', textDark: false },
-]
-
-const maleThemes = [
-  { id: 'midnight', name: 'Midnight', gradient: 'linear-gradient(135deg, #1e293b, #0f172a)', primary: '#3b82f6', textDark: false },
-  { id: 'ocean', name: 'Ocean', gradient: 'linear-gradient(135deg, #0c4a6e, #075985)', primary: '#0ea5e9', textDark: false },
-  { id: 'forest', name: 'Forest', gradient: 'linear-gradient(135deg, #14532d, #166534)', primary: '#22c55e', textDark: false },
-  { id: 'steel', name: 'Steel', gradient: 'linear-gradient(135deg, #374151, #1f2937)', primary: '#6b7280', textDark: false },
-  { id: 'crimson', name: 'Crimson', gradient: 'linear-gradient(135deg, #7f1d1d, #991b1b)', primary: '#ef4444', textDark: false },
-  { id: 'royal', name: 'Royal', gradient: 'linear-gradient(135deg, #1e1b4b, #312e81)', primary: '#6366f1', textDark: false },
-  { id: 'emerald', name: 'Emerald', gradient: 'linear-gradient(135deg, #064e3b, #065f46)', primary: '#10b981', textDark: false },
-  { id: 'amber', name: 'Amber', gradient: 'linear-gradient(135deg, #78350f, #92400e)', primary: '#f59e0b', textDark: false },
-  { id: 'slate', name: 'Slate', gradient: 'linear-gradient(135deg, #1e293b, #334155)', primary: '#64748b', textDark: false },
-  { id: 'violet', name: 'Violet', gradient: 'linear-gradient(135deg, #4c1d95, #5b21b6)', primary: '#8b5cf6', textDark: false },
-]
-
 // Ozellestirme (Customization) Content
 function OzellestirmeContent() {
   const { settings, currentTheme, updateSettings, applyTheme } = useTheme()
   const [themeCategory, setThemeCategory] = useState<'female' | 'male'>('male')
-  const [showSaveToast, setShowSaveToast] = useState(false)
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
-  const [sidebarPosition, setSidebarPosition] = useState<'left' | 'right'>('left')
-  const [viewMode, setViewMode] = useState<'comfortable' | 'compact'>('comfortable')
-  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
-  const [cardStyle, setCardStyle] = useState<'grid' | 'list'>('grid')
-  const [animationsEnabled, setAnimationsEnabled] = useState(true)
-  const [defaultPage, setDefaultPage] = useState('dashboard')
-  
+
   const currentThemes = themeCategory === 'female' ? femaleThemes : maleThemes
-  
-  // Handle theme selection - instantly applied via context
-  const handleThemeSelect = (themeId: string) => {
-    applyTheme(themeId)
-  }
-  
-  // Handle settings change - instantly applied via context
-  const handleSettingChange = (key: string, value: unknown) => {
-    updateSettings({ [key]: value })
-  }
-  
-  // Apply font size
-  const applyFontSize = (size: 'small' | 'medium' | 'large') => {
-    setFontSize(size)
-    updateSettings({ fontSize: size })
-  }
-  
-  // Apply animations
-  const applyAnimations = (enabled: boolean) => {
-    setAnimationsEnabled(enabled)
-    updateSettings({ animationsEnabled: enabled })
-  }
-  
-  // Save settings
-  const saveSettings = () => {
-    // Settings are already saved via updateSettings calls
-    // Just show confirmation
-    showSaveConfirmation()
-  }
-  
-  // Show save confirmation
-  const showSaveConfirmation = () => {
-    setShowSaveToast(true)
-    setTimeout(() => setShowSaveToast(false), 3000)
-  }
+
+  const defaultPageOptions = [
+    { id: 'analytics', label: 'Analiz', icon: Monitor },
+    { id: 'arena', label: 'Arena', icon: Zap },
+    { id: 'personnel', label: 'Personel', icon: Users },
+    { id: 'schedule', label: 'Mesai', icon: Calendar },
+    { id: 'education', label: 'Egitim', icon: Briefcase },
+    { id: 'settings', label: 'Ayarlar', icon: Settings },
+  ] as const
 
   return (
     <div className="space-y-6">
@@ -1197,7 +1137,7 @@ function OzellestirmeContent() {
           {currentThemes.map(theme => (
             <motion.button
               key={theme.id}
-onClick={() => handleThemeSelect(theme.id)}
+onClick={() => applyTheme(theme.id)}
   className="relative aspect-[4/3] rounded-xl overflow-hidden group"
   style={{
   background: theme.gradient,
@@ -1284,100 +1224,9 @@ onClick={() => applyTheme(null)}
         )}
       </div>
 
-      {/* Layout Settings */}
+      {/* Available Settings */}
       <div className="space-y-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <p className="text-[10px] font-semibold text-neutral-500 tracking-wider">DUZENE AYARLARI</p>
-
-        {/* Sidebar Position */}
-        <div 
-          className="p-4 rounded-xl"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Layout size={16} className="text-neutral-400" />
-              <div>
-                <p className="text-sm font-medium text-white">Sidebar Pozisyonu</p>
-                <p className="text-[10px] text-neutral-500">Yan menunun konumu</p>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-onClick={() => handleSettingChange('sidebarPosition', 'left')}
-  className="p-3 rounded-lg flex items-center justify-center gap-2 transition-all"
-  style={{
-  background: settings.sidebarPosition === 'left' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.03)',
-  border: `1px solid ${settings.sidebarPosition === 'left' ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-  color: settings.sidebarPosition === 'left' ? '#a855f7' : '#737373',
-  }}
-            >
-              <PanelLeft size={16} />
-              <span className="text-xs font-medium">Sol</span>
-            </button>
-            <button
-onClick={() => handleSettingChange('sidebarPosition', 'right')}
-  className="p-3 rounded-lg flex items-center justify-center gap-2 transition-all"
-  style={{
-  background: settings.sidebarPosition === 'right' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.03)',
-  border: `1px solid ${settings.sidebarPosition === 'right' ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-  color: settings.sidebarPosition === 'right' ? '#a855f7' : '#737373',
-  }}
-            >
-              <PanelRight size={16} />
-              <span className="text-xs font-medium">Sag</span>
-            </button>
-          </div>
-        </div>
-
-        {/* View Mode */}
-        <div 
-          className="p-4 rounded-xl"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Monitor size={16} className="text-neutral-400" />
-              <div>
-                <p className="text-sm font-medium text-white">Gorunum Modu</p>
-                <p className="text-[10px] text-neutral-500">Icerik yogunlugu tercihi</p>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-onClick={() => handleSettingChange('viewMode', 'comfortable')}
-  className="p-3 rounded-lg flex flex-col items-center gap-2 transition-all"
-  style={{
-  background: settings.viewMode === 'comfortable' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
-  border: `1px solid ${settings.viewMode === 'comfortable' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-  color: settings.viewMode === 'comfortable' ? '#10b981' : '#737373',
-  }}
-            >
-<div className="flex flex-col gap-1.5 w-full">
-  <div className="h-2 w-full rounded" style={{ background: settings.viewMode === 'comfortable' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)' }} />
-  <div className="h-2 w-3/4 rounded" style={{ background: settings.viewMode === 'comfortable' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)' }} />
-  </div>
-              <span className="text-xs font-medium">Rahat</span>
-            </button>
-            <button
-onClick={() => handleSettingChange('viewMode', 'compact')}
-  className="p-3 rounded-lg flex flex-col items-center gap-2 transition-all"
-  style={{
-  background: settings.viewMode === 'compact' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
-  border: `1px solid ${settings.viewMode === 'compact' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-  color: settings.viewMode === 'compact' ? '#10b981' : '#737373',
-  }}
-            >
-<div className="flex flex-col gap-0.5 w-full">
-  <div className="h-1.5 w-full rounded" style={{ background: settings.viewMode === 'compact' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)' }} />
-  <div className="h-1.5 w-full rounded" style={{ background: settings.viewMode === 'compact' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255,255,255,0.08)' }} />
-  <div className="h-1.5 w-3/4 rounded" style={{ background: settings.viewMode === 'compact' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)' }} />
-  </div>
-              <span className="text-xs font-medium">Kompakt</span>
-            </button>
-          </div>
-        </div>
+        <p className="text-[10px] font-semibold text-neutral-500 tracking-wider">GENEL AYARLAR</p>
 
         {/* Font Size */}
         <div 
@@ -1397,7 +1246,7 @@ onClick={() => handleSettingChange('viewMode', 'compact')}
             {(['small', 'medium', 'large'] as const).map(size => (
               <button
                 key={size}
-onClick={() => handleSettingChange('fontSize', size)}
+onClick={() => updateSettings({ fontSize: size })}
   className="p-3 rounded-lg flex flex-col items-center gap-2 transition-all"
   style={{
   background: settings.fontSize === size ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.03)',
@@ -1410,63 +1259,6 @@ onClick={() => handleSettingChange('fontSize', size)}
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Card Style */}
-        <div 
-          className="p-4 rounded-xl"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Grid size={16} className="text-neutral-400" />
-              <div>
-                <p className="text-sm font-medium text-white">Kart Gorunumu</p>
-                <p className="text-[10px] text-neutral-500">Liste ve kartlarin gorunum stili</p>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-onClick={() => handleSettingChange('cardStyle', 'grid')}
-  className="p-3 rounded-lg flex items-center justify-center gap-2 transition-all"
-  style={{
-  background: settings.cardStyle === 'grid' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(255,255,255,0.03)',
-  border: `1px solid ${settings.cardStyle === 'grid' ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-  color: settings.cardStyle === 'grid' ? '#fbbf24' : '#737373',
-  }}
-            >
-              <Grid size={16} />
-              <span className="text-xs font-medium">Grid</span>
-            </button>
-            <button
-onClick={() => handleSettingChange('cardStyle', 'list')}
-  className="p-3 rounded-lg flex items-center justify-center gap-2 transition-all"
-  style={{
-  background: settings.cardStyle === 'list' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(255,255,255,0.03)',
-  border: `1px solid ${settings.cardStyle === 'list' ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-  color: settings.cardStyle === 'list' ? '#fbbf24' : '#737373',
-  }}
-            >
-              <List size={16} />
-              <span className="text-xs font-medium">Liste</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Animations Toggle */}
-        <div 
-          className="p-4 rounded-xl flex items-center justify-between"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <div className="flex items-center gap-3">
-            <Zap size={16} className="text-neutral-400" />
-            <div>
-              <p className="text-sm font-medium text-white">Animasyonlar</p>
-              <p className="text-[10px] text-neutral-500">Gecis ve hareket efektleri</p>
-            </div>
-          </div>
-          <ToggleSwitch checked={settings.animationsEnabled} onChange={() => handleSettingChange('animationsEnabled', !settings.animationsEnabled)} />
         </div>
 
         {/* Default Page */}
@@ -1484,14 +1276,10 @@ onClick={() => handleSettingChange('cardStyle', 'list')}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: Home },
-              { id: 'arena', label: 'Arena', icon: Zap },
-              { id: 'analysis', label: 'Analiz', icon: Monitor },
-            ].map(page => (
+            {defaultPageOptions.map(page => (
               <button
                 key={page.id}
-onClick={() => handleSettingChange('defaultPage', page.id)}
+onClick={() => updateSettings({ defaultPage: page.id })}
   className="p-3 rounded-lg flex flex-col items-center gap-2 transition-all"
   style={{
   background: settings.defaultPage === page.id ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.03)',
@@ -1506,49 +1294,6 @@ onClick={() => handleSettingChange('defaultPage', page.id)}
           </div>
         </div>
       </div>
-
-{/* Save Button */}
-  <motion.button
-  onClick={showSaveConfirmation}
-        className="w-full py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
-        style={{
-          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.2))',
-          border: '1px solid rgba(168, 85, 247, 0.4)',
-          color: '#a855f7'
-        }}
-        whileHover={{
-          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.3))',
-        }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <Check size={16} />
-        Degisiklikleri Kaydet
-      </motion.button>
-
-      {/* Success Toast */}
-      <AnimatePresence>
-        {showSaveToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 px-5 py-3 rounded-xl flex items-center gap-3 z-50"
-            style={{ 
-              background: 'rgba(16, 185, 129, 0.15)', 
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)'
-            }}
-          >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16, 185, 129, 0.2)' }}>
-              <Check size={16} className="text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-emerald-400">Ayarlar Kaydedildi</p>
-              <p className="text-[10px] text-emerald-500/70">Tercihleriniz basariyla guncellendi</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
@@ -3220,6 +2965,58 @@ showAsPopup: formShowPopup,
           <SaveButton />
         </div>
       )}
+    </div>
+  )
+}
+
+function SiteYonetimiContent() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-[18px] font-semibold text-white">Site Yonetimi</h3>
+        <p className="text-sm text-neutral-500 mt-1">
+          Yeni site olusturma ve kurulum sihirbazi islemlerini buradan yonetebilirsiniz.
+        </p>
+      </div>
+
+      <div
+        className="p-5 rounded-2xl"
+        style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)" }}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-purple-400" />
+              <p className="text-sm font-semibold text-white">Site Kurulum Sihirbazi</p>
+            </div>
+            <p className="text-xs text-neutral-400 max-w-xl">
+              Yeni site eklendiginde birimler, ilk yonetici, vardiya ayarlari ve temel
+              entegre moduller tek akista olusturulur.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <span className="text-[10px] px-2 py-1 rounded-full border border-purple-500/30 text-purple-300">Birimler</span>
+              <span className="text-[10px] px-2 py-1 rounded-full border border-blue-500/30 text-blue-300">Yonetici</span>
+              <span className="text-[10px] px-2 py-1 rounded-full border border-emerald-500/30 text-emerald-300">Chronos</span>
+              <span className="text-[10px] px-2 py-1 rounded-full border border-cyan-500/30 text-cyan-300">Arena Senkron</span>
+            </div>
+          </div>
+
+          <motion.button
+            onClick={() => window.location.assign("/admin/sites")}
+            className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+            style={{
+              background: "linear-gradient(135deg, rgba(168,85,247,0.22), rgba(59,130,246,0.22))",
+              border: "1px solid rgba(168, 85, 247, 0.35)",
+              color: "#e9d5ff",
+            }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Site Ekle
+            <ChevronRight className="w-4 h-4" />
+          </motion.button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -5227,6 +5024,7 @@ case "profil": return <ProfilContent />
   case "ozellestirme": return <OzellestirmeContent />
   case "taleplerim": return <TaleplerimContent />
   case "yonetim-bildirim": return <YonetimBildirimContent />
+      case "site-yonetimi": return <SiteYonetimiContent />
       case "kullanicilar": return <KullanicilarContent />
       case "yetkilendirme": return <YetkilendirmeContent />
       case "veri-yukleme": return <VeriYuklemeContent />

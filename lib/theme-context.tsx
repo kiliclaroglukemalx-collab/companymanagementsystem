@@ -30,6 +30,11 @@ export const maleThemes = [
 ]
 
 export const allThemes = [...femaleThemes, ...maleThemes]
+export const dashboardTabs = ['analytics', 'arena', 'personnel', 'schedule', 'education', 'settings'] as const
+type DashboardTab = (typeof dashboardTabs)[number]
+
+const themeIdSet = new Set(allThemes.map(theme => theme.id))
+const dashboardTabSet = new Set<string>(dashboardTabs)
 
 export interface ThemeSettings {
   themeId: string | null
@@ -37,7 +42,7 @@ export interface ThemeSettings {
   viewMode: 'comfortable' | 'compact'
   fontSize: 'small' | 'medium' | 'large'
   animationsEnabled: boolean
-  defaultPage: string
+  defaultPage: DashboardTab
   cardStyle: 'grid' | 'list'
 }
 
@@ -47,8 +52,33 @@ const defaultSettings: ThemeSettings = {
   viewMode: 'comfortable',
   fontSize: 'medium',
   animationsEnabled: true,
-  defaultPage: 'dashboard',
+  defaultPage: 'analytics',
   cardStyle: 'grid'
+}
+
+const sanitizeSettings = (raw: unknown): ThemeSettings => {
+  const candidate = typeof raw === 'object' && raw !== null ? (raw as Partial<ThemeSettings>) : {}
+
+  return {
+    themeId:
+      candidate.themeId === null
+        ? null
+        : typeof candidate.themeId === 'string' && themeIdSet.has(candidate.themeId)
+          ? candidate.themeId
+          : null,
+    sidebarPosition: candidate.sidebarPosition === 'right' ? 'right' : 'left',
+    viewMode: candidate.viewMode === 'compact' ? 'compact' : 'comfortable',
+    fontSize:
+      candidate.fontSize === 'small' || candidate.fontSize === 'medium' || candidate.fontSize === 'large'
+        ? candidate.fontSize
+        : 'medium',
+    animationsEnabled: typeof candidate.animationsEnabled === 'boolean' ? candidate.animationsEnabled : true,
+    defaultPage:
+      typeof candidate.defaultPage === 'string' && dashboardTabSet.has(candidate.defaultPage)
+        ? (candidate.defaultPage as DashboardTab)
+        : 'analytics',
+    cardStyle: candidate.cardStyle === 'list' ? 'list' : 'grid',
+  }
 }
 
 interface ThemeContextType {
@@ -68,16 +98,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Load settings from localStorage on mount
   useEffect(() => {
-    setMounted(true)
     const saved = localStorage.getItem('panelSettings')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setSettings(prev => ({ ...prev, ...parsed }))
+        const sanitized = sanitizeSettings(parsed)
+        setSettings(sanitized)
+        localStorage.setItem('panelSettings', JSON.stringify(sanitized))
       } catch (e) {
         console.log('[v0] Failed to load theme settings')
       }
     }
+    setMounted(true)
   }, [])
 
   // Apply theme whenever it changes
@@ -110,7 +142,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const updateSettings = (newSettings: Partial<ThemeSettings>) => {
     setSettings(prev => {
-      const updated = { ...prev, ...newSettings }
+      const updated = sanitizeSettings({ ...prev, ...newSettings })
       localStorage.setItem('panelSettings', JSON.stringify(updated))
       return updated
     })

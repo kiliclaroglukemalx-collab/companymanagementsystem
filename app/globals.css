@@ -40,6 +40,7 @@
   --glow-blue: #3b82f6;
   --glow-purple: #8b5cf6;
   --glow-cyan: #06b6d4;
+  --font-scale: 1;
 }
 
 @theme inline {
@@ -87,6 +88,10 @@
 }
 
 @layer base {
+  html {
+    font-size: calc(16px * var(--font-scale));
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

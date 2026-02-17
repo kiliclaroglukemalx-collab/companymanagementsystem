@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, Suspense, lazy } from "react"
+import { useState, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { motion, AnimatePresence, LayoutGroup, cubicBezier } from "framer-motion"
 import { MicroHeader } from "@/components/dashboard/micro-header"
@@ -84,16 +84,34 @@ const pageTransition = {
   transition: { duration: 0.4, ease: cubicBezier(0.25, 0.1, 0.25, 1) }
 }
 
+const availableTabs = new Set([
+  "analytics",
+  "arena",
+  "personnel",
+  "schedule",
+  "education",
+  "settings",
+])
+
+const getValidTab = (tab: string) => (availableTabs.has(tab) ? tab : "analytics")
+
 export default function DashboardPage() {
   const { currentTheme, settings } = useTheme()
-  const [activeTab, setActiveTab] = useState("analytics")
+  const [activeTab, setActiveTab] = useState(getValidTab(settings.defaultPage))
+  const [hasManualTabSelection, setHasManualTabSelection] = useState(false)
   const [selectedCard, setSelectedCard] = useState<DashboardCard | null>(null)
   const [isDataWallOpen, setIsDataWallOpen] = useState(false)
   const [lockedBrand, setLockedBrand] = useState<Brand | null>(null)
 
   const handleTabChange = useCallback((tab: string) => {
-    setActiveTab(tab)
+    setHasManualTabSelection(true)
+    setActiveTab(getValidTab(tab))
   }, [])
+
+  useEffect(() => {
+    if (hasManualTabSelection) return
+    setActiveTab(getValidTab(settings.defaultPage))
+  }, [settings.defaultPage, hasManualTabSelection])
 
   const handleCardClick = useCallback((card: DashboardCard) => {
     setSelectedCard(card)
