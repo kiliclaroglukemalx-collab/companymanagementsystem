@@ -497,6 +497,7 @@ export const TR = {
       BON: "Bonus Analizi",
       CASINO: "Casino Analizi",
       GENEL: "Genel Analiz",
+      PLAYERS: "Oyuncu Analizi",
     },
     status: {
       PENDING: "Beklemede",

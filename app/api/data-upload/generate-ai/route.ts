@@ -1,30 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerAuthContext } from "@/lib/server-auth"
 import { basePrisma } from "@/lib/prisma"
+import { runAiAnalysis } from "@/lib/ai-analysis/service"
 
 export async function POST(req: NextRequest) {
   try {
     const auth = await getServerAuthContext()
-    
-    // Only SUPER_ADMIN can generate AI analysis
+
     if (!auth || auth.role !== "SUPER_ADMIN") {
-      return NextResponse.json(
-        { error: "Yetkisiz erişim" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Yetkisiz erisim" }, { status: 403 })
     }
 
     const body = await req.json()
     const { uploadId, siteId, module } = body
 
     if (!uploadId || !siteId || !module) {
-      return NextResponse.json(
-        { error: "Eksik parametreler" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Eksik parametreler" }, { status: 400 })
     }
 
-    // Get upload data
     const upload = await basePrisma.dataUpload.findUnique({
       where: { id: uploadId },
       include: {
@@ -37,159 +30,125 @@ export async function POST(req: NextRequest) {
     })
 
     if (!upload) {
-      return NextResponse.json(
-        { error: "Yükleme bulunamadı" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Yukleme bulunamadi" }, { status: 404 })
     }
 
-    // Prepare data summary for AI
-    const dataSummary = prepareDataSummary(upload, module)
-    
-    // Generate AI analysis
-    const aiResponse = await generateAIAnalysis(dataSummary, module, upload.site.name)
+    const payload = buildAnalyzePayload(upload)
+    const aiResult = await runAiAnalysis({
+      module,
+      payload,
+    })
 
-    // Save AI analysis
     const analysis = await basePrisma.aIAnalysis.create({
       data: {
         siteId,
         dataUploadId: uploadId,
-        analyticModule: module as any,
-        prompt: dataSummary,
-        response: aiResponse.analysis,
-        tokensUsed: aiResponse.tokensUsed,
-        model: aiResponse.model,
+        analyticModule: aiResult.storageModule as any,
+        prompt: JSON.stringify(aiResult.prompt),
+        response: JSON.stringify(aiResult.analysis),
+        tokensUsed: aiResult.tokensUsed,
+        model: aiResult.model,
         isPublished: false,
-      }
+      },
     })
 
     return NextResponse.json({
       success: true,
       analysis,
+      structured: aiResult.analysis,
     })
   } catch (error) {
     console.error("AI generation error:", error)
-    return NextResponse.json(
-      { error: "AI analizi oluşturulamadı" },
-      { status: 500 }
-    )
+    if (error instanceof Error && error.message === "INVALID_MODULE") {
+      return NextResponse.json({ error: "Gecersiz module" }, { status: 400 })
+    }
+    return NextResponse.json({ error: "AI analizi olusturulamadi" }, { status: 500 })
   }
 }
 
-function prepareDataSummary(upload: any, module: string): string {
-  let summary = `Site: ${upload.site.name}\n`
-  summary += `Analitik Modül: ${module}\n`
-  summary += `Yüklenen Dosya: ${upload.fileName}\n`
-  summary += `Yükleme Tarihi: ${new Date(upload.createdAt).toLocaleDateString("tr-TR")}\n\n`
-
-  if (module === "FINANS" && upload.financialFlows.length > 0) {
-    summary += "Finansal Veriler (Son 30 Gün):\n"
-    
-    const totalIncome = upload.financialFlows.reduce((sum: number, f: any) => sum + f.totalIncome, 0)
-    const totalBankFees = upload.financialFlows.reduce((sum: number, f: any) => sum + f.bankFees, 0)
-    const totalWithdrawals = upload.financialFlows.reduce((sum: number, f: any) => sum + f.withdrawals, 0)
-    const totalOperatingCosts = upload.financialFlows.reduce((sum: number, f: any) => sum + f.operatingCosts, 0)
-    const totalNetProfit = upload.financialFlows.reduce((sum: number, f: any) => sum + f.netProfit, 0)
-    
-    summary += `- Toplam Gelir: ${totalIncome.toLocaleString("tr-TR")} TL\n`
-    summary += `- Toplam Banka Kesintisi: ${totalBankFees.toLocaleString("tr-TR")} TL\n`
-    summary += `- Toplam Çekim: ${totalWithdrawals.toLocaleString("tr-TR")} TL\n`
-    summary += `- Toplam İşletme Gideri: ${totalOperatingCosts.toLocaleString("tr-TR")} TL\n`
-    summary += `- Toplam Net Kazanç: ${totalNetProfit.toLocaleString("tr-TR")} TL\n`
-    summary += `- Ortalama Günlük Kazanç: ${(totalNetProfit / upload.financialFlows.length).toLocaleString("tr-TR")} TL\n`
-    
-    if (upload.financialFlows[0]) {
-      summary += `- Son Kümülatif Kazanç: ${upload.financialFlows[0].cumulativeProfit.toLocaleString("tr-TR")} TL\n`
+function buildAnalyzePayload(upload: {
+  id: string
+  fileName: string
+  fileType: string
+  createdAt: Date
+  metaData: unknown
+  site: { id: string; name: string }
+  financialFlows: Array<{
+    date: Date
+    totalIncome: number
+    bankFees: number
+    withdrawals: number
+    operatingCosts: number
+    netProfit: number
+    cumulativeProfit: number
+  }>
+}) {
+  const flowCount = upload.financialFlows.length
+  const totals = upload.financialFlows.reduce(
+    (acc, flow) => {
+      acc.totalIncome += flow.totalIncome
+      acc.bankFees += flow.bankFees
+      acc.withdrawals += flow.withdrawals
+      acc.operatingCosts += flow.operatingCosts
+      acc.netProfit += flow.netProfit
+      return acc
+    },
+    {
+      totalIncome: 0,
+      bankFees: 0,
+      withdrawals: 0,
+      operatingCosts: 0,
+      netProfit: 0,
     }
+  )
+
+  const periods = upload.financialFlows
+    .map((item) => item.date.toISOString().slice(0, 10))
+    .sort()
+
+  const periodStart = periods[0] ?? upload.createdAt.toISOString().slice(0, 10)
+  const periodEnd = periods[periods.length - 1] ?? upload.createdAt.toISOString().slice(0, 10)
+
+  const moduleData: Record<string, unknown> = {
+    period_start: periodStart,
+    period_end: periodEnd,
+    kpis_json: {
+      flow_count: flowCount,
+      total_income: totals.totalIncome,
+      total_bank_fees: totals.bankFees,
+      total_withdrawals: totals.withdrawals,
+      total_operating_costs: totals.operatingCosts,
+      total_net_profit: totals.netProfit,
+      last_cumulative_profit: upload.financialFlows[0]?.cumulativeProfit ?? null,
+    },
+    tables_json: upload.financialFlows.slice(0, 10).map((item) => ({
+      date: item.date.toISOString().slice(0, 10),
+      total_income: item.totalIncome,
+      bank_fees: item.bankFees,
+      withdrawals: item.withdrawals,
+      operating_costs: item.operatingCosts,
+      net_profit: item.netProfit,
+      cumulative_profit: item.cumulativeProfit,
+    })),
+    anomalies_json: [],
+    meta_data: upload.metaData ?? {},
   }
 
-  return summary
-}
-
-async function generateAIAnalysis(dataSummary: string, module: string, siteName: string): Promise<{
-  analysis: string
-  tokensUsed: number
-  model: string
-}> {
-  // Check if OpenAI API key is available
-  const apiKey = process.env.OPENAI_API_KEY
-
-  if (!apiKey) {
-    // Return a fallback analysis without AI
-    return {
-      analysis: generateFallbackAnalysis(dataSummary, module, siteName),
-      tokensUsed: 0,
-      model: "fallback",
-    }
-  }
-
-  try {
-    // Call OpenAI API
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+  return {
+    module_data: moduleData,
+    global_context: {
+      site_id: upload.site.id,
+      site_name: upload.site.name,
+      upload_id: upload.id,
+      upload_created_at: upload.createdAt.toISOString(),
+    },
+    uploaded_files_context: [
+      {
+        file_name: upload.fileName,
+        file_type: upload.fileType,
+        period_start: periodStart,
+        period_end: periodEnd,
       },
-      body: JSON.stringify({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: `Sen bir finansal ve iş analitiği uzmanısın. ${siteName} sitesi için ${module} modülü verilerini analiz ediyorsun. Detaylı, içgörü dolu ve eylem önerileri içeren Türkçe bir analiz raporu hazırla.`
-          },
-          {
-            role: "user",
-            content: `Aşağıdaki verileri analiz et ve detaylı bir rapor hazırla:\n\n${dataSummary}`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error("OpenAI API error")
-    }
-
-    const data = await response.json()
-    
-    return {
-      analysis: data.choices[0].message.content,
-      tokensUsed: data.usage?.total_tokens || 0,
-      model: "gpt-4",
-    }
-  } catch (error) {
-    console.error("OpenAI API error:", error)
-    // Fallback to rule-based analysis
-    return {
-      analysis: generateFallbackAnalysis(dataSummary, module, siteName),
-      tokensUsed: 0,
-      model: "fallback",
-    }
+    ],
   }
-}
-
-function generateFallbackAnalysis(dataSummary: string, module: string, siteName: string): string {
-  // Generate a basic analysis without AI
-  let analysis = `# ${siteName} - ${module} Analiz Raporu\n\n`
-  analysis += `## Veri Özeti\n${dataSummary}\n\n`
-  
-  if (module === "FINANS") {
-    analysis += `## Finansal Durum Değerlendirmesi\n\n`
-    analysis += `Bu rapor, yüklenen finansal veriler üzerinden otomatik olarak oluşturulmuştur.\n\n`
-    analysis += `### Öneriler:\n`
-    analysis += `1. Gelir kaynaklarını çeşitlendirme stratejileri değerlendirilmeli\n`
-    analysis += `2. Banka kesintilerini azaltmak için alternatif ödeme yöntemleri incelenebilir\n`
-    analysis += `3. İşletme giderlerinin optimizasyonu için maliyet analizi yapılmalı\n`
-    analysis += `4. Nakit akış yönetimi için günlük takip sistemleri kurulmalı\n\n`
-    analysis += `### Sonuç:\n`
-    analysis += `Genel finansal performans, yüklenen veriler doğrultusunda analiz edilmiştir. Detaylı öneriler için veri setinin genişletilmesi önerilir.\n`
-  } else {
-    analysis += `## ${module} Modülü Analizi\n\n`
-    analysis += `Bu modül için analiz devam etmektedir. Yüklenen veriler işlenmiş ve sisteme kaydedilmiştir.\n\n`
-    analysis += `Gelişmiş analiz özellikleri yakında eklenecektir.\n`
-  }
-  
-  return analysis
 }

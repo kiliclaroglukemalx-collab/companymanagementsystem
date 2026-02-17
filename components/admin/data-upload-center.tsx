@@ -230,6 +230,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
               <option value="BON">{TR.dataUpload.modules.BON}</option>
               <option value="CASINO">{TR.dataUpload.modules.CASINO}</option>
               <option value="GENEL">{TR.dataUpload.modules.GENEL}</option>
+              <option value="PLAYERS">{TR.dataUpload.modules.PLAYERS}</option>
             </select>
           </div>
 

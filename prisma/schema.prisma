@@ -343,6 +343,7 @@ enum AnalyticModule {
   BON
   CASINO
   GENEL
+  PLAYERS
 }
 
 enum UploadStatus {
