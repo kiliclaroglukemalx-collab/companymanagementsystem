@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -19,7 +20,7 @@ type Step3AdminUserProps = {
   errors: Record<string, string>
 }
 
-export function Step3AdminUser({
+export const Step3AdminUser = memo(function Step3AdminUser({
   adminUser,
   departmentOptions,
   onChange,
@@ -109,4 +110,4 @@ export function Step3AdminUser({
       </div>
     </div>
   )
-}
+})

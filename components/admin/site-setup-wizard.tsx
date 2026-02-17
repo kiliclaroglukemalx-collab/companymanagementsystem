@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import dynamic from "next/dynamic"
+import { useCallback, useMemo, useState } from "react"
 import { setupNewSite } from "@/lib/admin-actions"
 import {
   DEFAULT_CHRONOS_SETTINGS,
@@ -10,8 +11,6 @@ import {
 import { Step1SiteInfo } from "@/components/admin/site-setup-steps/step-1-site-info"
 import { Step2Departments } from "@/components/admin/site-setup-steps/step-2-departments"
 import { Step3AdminUser } from "@/components/admin/site-setup-steps/step-3-admin-user"
-import { Step4ChronosSettings } from "@/components/admin/site-setup-steps/step-4-chronos-settings"
-import { Step5Summary } from "@/components/admin/site-setup-steps/step-5-summary"
 import type {
   SiteSetupFieldErrors,
   SiteSetupFormState,
@@ -45,6 +44,22 @@ const STEP_TITLES = [
   TR.siteSetup.step4Title,
   TR.siteSetup.step5Title,
 ]
+
+const LazyStep4ChronosSettings = dynamic(
+  () =>
+    import("@/components/admin/site-setup-steps/step-4-chronos-settings").then(
+      (module) => module.Step4ChronosSettings
+    ),
+  { ssr: false }
+)
+
+const LazyStep5Summary = dynamic(
+  () =>
+    import("@/components/admin/site-setup-steps/step-5-summary").then(
+      (module) => module.Step5Summary
+    ),
+  { ssr: false }
+)
 
 function createDefaultFormState(): SiteSetupFormState {
   return {
@@ -214,6 +229,40 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
 
   const progressValue = useMemo(() => ((step + 1) / STEP_TITLES.length) * 100, [step])
 
+  const departmentOptions = useMemo(
+    () =>
+      formState.departments
+        .map((department) => normalizeLabel(department.name))
+        .filter(Boolean),
+    [formState.departments]
+  )
+
+  const handleSiteNameChange = useCallback((siteName: string) => {
+    setFormState((current) => (current.siteName === siteName ? current : { ...current, siteName }))
+  }, [])
+
+  const handleDepartmentsChange = useCallback((departments: SiteSetupFormState["departments"]) => {
+    setFormState((current) => ({ ...current, departments }))
+  }, [])
+
+  const handleAdminUserChange = useCallback((adminUser: SiteSetupFormState["adminUser"]) => {
+    setFormState((current) => ({ ...current, adminUser }))
+  }, [])
+
+  const handleChronosSettingsChange = useCallback(
+    (chronosSettings: SiteSetupFormState["chronosSettings"]) => {
+      setFormState((current) => ({ ...current, chronosSettings }))
+    },
+    []
+  )
+
+  const handleShiftDefinitionsChange = useCallback(
+    (shiftDefinitions: SiteSetupFormState["shiftDefinitions"]) => {
+      setFormState((current) => ({ ...current, shiftDefinitions }))
+    },
+    []
+  )
+
   const resetWizard = () => {
     setStep(0)
     setErrors({})
@@ -294,10 +343,6 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
     }
   }
 
-  const departmentOptions = formState.departments
-    .map((department) => normalizeLabel(department.name))
-    .filter(Boolean)
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? handleClose() : null)}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
@@ -366,7 +411,7 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
               {step === 0 ? (
                 <Step1SiteInfo
                   siteName={formState.siteName}
-                  onChange={(siteName) => setFormState((current) => ({ ...current, siteName }))}
+                  onChange={handleSiteNameChange}
                   error={errors.siteName}
                 />
               ) : null}
@@ -374,7 +419,7 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
               {step === 1 ? (
                 <Step2Departments
                   departments={formState.departments}
-                  onChange={(departments) => setFormState((current) => ({ ...current, departments }))}
+                  onChange={handleDepartmentsChange}
                   error={errors.departments}
                 />
               ) : null}
@@ -383,26 +428,22 @@ export function SiteSetupWizard({ isOpen, onClose, onComplete }: SiteSetupWizard
                 <Step3AdminUser
                   adminUser={formState.adminUser}
                   departmentOptions={departmentOptions}
-                  onChange={(adminUser) => setFormState((current) => ({ ...current, adminUser }))}
+                  onChange={handleAdminUserChange}
                   errors={errors}
                 />
               ) : null}
 
               {step === 3 ? (
-                <Step4ChronosSettings
+                <LazyStep4ChronosSettings
                   chronosSettings={formState.chronosSettings}
                   shiftDefinitions={formState.shiftDefinitions}
-                  onChronosSettingsChange={(chronosSettings) =>
-                    setFormState((current) => ({ ...current, chronosSettings }))
-                  }
-                  onShiftDefinitionsChange={(shiftDefinitions) =>
-                    setFormState((current) => ({ ...current, shiftDefinitions }))
-                  }
+                  onChronosSettingsChange={handleChronosSettingsChange}
+                  onShiftDefinitionsChange={handleShiftDefinitionsChange}
                   errors={errors}
                 />
               ) : null}
 
-              {step === 4 ? <Step5Summary data={formState} /> : null}
+              {step === 4 ? <LazyStep5Summary data={formState} /> : null}
             </div>
 
             <DialogFooter className="pt-2">

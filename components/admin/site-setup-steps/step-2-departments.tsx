@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +15,11 @@ type Step2DepartmentsProps = {
   error?: string
 }
 
-export function Step2Departments({ departments, onChange, error }: Step2DepartmentsProps) {
+export const Step2Departments = memo(function Step2Departments({
+  departments,
+  onChange,
+  error,
+}: Step2DepartmentsProps) {
   const handleDepartmentNameChange = (index: number, value: string) => {
     const next = departments.map((department, departmentIndex) =>
       departmentIndex === index
@@ -64,7 +69,7 @@ export function Step2Departments({ departments, onChange, error }: Step2Departme
       <div className="space-y-3">
         <Label>{TR.siteSetup.departmentsLabel}</Label>
         {departments.map((department, index) => (
-          <div key={`${index}-${department.name}`} className="flex items-center gap-2">
+          <div key={index} className="flex items-center gap-2">
             <Input
               value={department.name}
               onChange={(event) => handleDepartmentNameChange(index, event.target.value)}
@@ -92,4 +97,4 @@ export function Step2Departments({ departments, onChange, error }: Step2Departme
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>
   )
-}
+})

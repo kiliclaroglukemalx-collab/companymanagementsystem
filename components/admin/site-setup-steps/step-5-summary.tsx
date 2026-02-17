@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { TR } from "@/lib/tr-constants"
 import type { SiteSetupFormState } from "@/components/admin/site-setup-types"
@@ -8,7 +9,7 @@ type Step5SummaryProps = {
   data: SiteSetupFormState
 }
 
-export function Step5Summary({ data }: Step5SummaryProps) {
+export const Step5Summary = memo(function Step5Summary({ data }: Step5SummaryProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -97,4 +98,4 @@ export function Step5Summary({ data }: Step5SummaryProps) {
       </div>
     </div>
   )
-}
+})

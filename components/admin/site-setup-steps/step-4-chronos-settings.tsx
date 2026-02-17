@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,7 +20,7 @@ type Step4ChronosSettingsProps = {
   errors: Record<string, string>
 }
 
-export function Step4ChronosSettings({
+export const Step4ChronosSettings = memo(function Step4ChronosSettings({
   chronosSettings,
   shiftDefinitions,
   onChronosSettingsChange,
@@ -229,4 +230,4 @@ export function Step4ChronosSettings({
       </div>
     </div>
   )
-}
+})
