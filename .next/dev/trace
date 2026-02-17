@@ -20,3 +20,8 @@
 [{"name":"compile-path","duration":618,"timestamp":12852469890063,"id":17,"tags":{"trigger":"middleware"},"startTime":1770476501733,"traceId":"3146c1c815e19a21"}]
 [{"name":"compile-path","duration":375,"timestamp":12852486201898,"id":18,"tags":{"trigger":"middleware"},"startTime":1770476518045,"traceId":"3146c1c815e19a21"}]
 [{"name":"compile-path","duration":409,"timestamp":12852497012449,"id":19,"tags":{"trigger":"middleware"},"startTime":1770476528856,"traceId":"3146c1c815e19a21"}]
+[{"name":"compile-path","duration":2069,"timestamp":12853968674341,"id":20,"tags":{"trigger":"middleware"},"startTime":1770478000542,"traceId":"3146c1c815e19a21"}]
+[{"name":"compile-path","duration":718,"timestamp":12854078920272,"id":21,"tags":{"trigger":"middleware"},"startTime":1770478110788,"traceId":"3146c1c815e19a21"}]
+[{"name":"compile-path","duration":437,"timestamp":12854084283282,"id":22,"tags":{"trigger":"middleware"},"startTime":1770478116151,"traceId":"3146c1c815e19a21"}]
+[{"name":"compile-path","duration":548,"timestamp":12854089815315,"id":23,"tags":{"trigger":"middleware"},"startTime":1770478121683,"traceId":"3146c1c815e19a21"}]
+[{"name":"compile-path","duration":657,"timestamp":12854996064939,"id":24,"tags":{"trigger":"middleware"},"startTime":1770479027905,"traceId":"3146c1c815e19a21"}]

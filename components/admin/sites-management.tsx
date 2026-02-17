@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { createSite, updateSite, deleteSite } from "@/lib/admin-actions"
+import { updateSite, deleteSite } from "@/lib/admin-actions"
+import { SiteSetupWizard } from "@/components/admin/site-setup-wizard"
+import type { SiteSetupResult } from "@/components/admin/site-setup-types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -41,32 +43,12 @@ interface SitesManagementProps {
 
 export function SitesManagement({ initialSites }: SitesManagementProps) {
   const [sites, setSites] = useState<Site[]>(initialSites)
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isSetupOpen, setIsSetupOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
   const [formData, setFormData] = useState({ name: "" })
   const [isLoading, setIsLoading] = useState(false)
-  
-  const handleCreate = async () => {
-    if (!formData.name.trim()) {
-      toast.error("Site name is required")
-      return
-    }
-    
-    setIsLoading(true)
-    const result = await createSite({ name: formData.name })
-    setIsLoading(false)
-    
-    if (result.success) {
-      setSites([result.data, ...sites])
-      setIsCreateOpen(false)
-      setFormData({ name: "" })
-      toast.success("Site created successfully")
-    } else {
-      toast.error(result.error)
-    }
-  }
   
   const handleUpdate = async () => {
     if (!selectedSite || !formData.name.trim()) {
@@ -108,8 +90,7 @@ export function SitesManagement({ initialSites }: SitesManagementProps) {
   }
   
   const openCreate = () => {
-    setFormData({ name: "" })
-    setIsCreateOpen(true)
+    setIsSetupOpen(true)
   }
   
   const openEdit = (site: Site) => {
@@ -121,6 +102,19 @@ export function SitesManagement({ initialSites }: SitesManagementProps) {
   const openDelete = (site: Site) => {
     setSelectedSite(site)
     setIsDeleteOpen(true)
+  }
+
+  const handleSetupComplete = (result: SiteSetupResult) => {
+    setSites((currentSites) => [
+      {
+        ...result.site,
+        _count: {
+          users: 1,
+          departments: result.departments.length,
+        },
+      },
+      ...currentSites.filter((site) => site.id !== result.site.id),
+    ])
   }
   
   return (
@@ -212,46 +206,11 @@ export function SitesManagement({ initialSites }: SitesManagementProps) {
         </div>
       )}
       
-      {/* Create Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Site</DialogTitle>
-            <DialogDescription>
-              Add a new site to the system
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-900">
-                Site Name
-              </label>
-              <Input
-                placeholder="Enter site name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateOpen(false)}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Site"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SiteSetupWizard
+        isOpen={isSetupOpen}
+        onClose={() => setIsSetupOpen(false)}
+        onComplete={handleSetupComplete}
+      />
       
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

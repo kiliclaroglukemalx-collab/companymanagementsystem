@@ -290,6 +290,42 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../app/api/chronos/editing-permission/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/chronos/editing-permission">> = Specific
+  const handler = {} as typeof import("../../../app/api/chronos/editing-permission/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/api/chronos/master-panel/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/chronos/master-panel">> = Specific
+  const handler = {} as typeof import("../../../app/api/chronos/master-panel/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/api/chronos/shift-approval/[id]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/chronos/shift-approval/[id]">> = Specific
+  const handler = {} as typeof import("../../../app/api/chronos/shift-approval/[id]/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/api/chronos/shift-approval/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/chronos/shift-approval">> = Specific
+  const handler = {} as typeof import("../../../app/api/chronos/shift-approval/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/api/data-upload/generate-ai/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/data-upload/generate-ai">> = Specific

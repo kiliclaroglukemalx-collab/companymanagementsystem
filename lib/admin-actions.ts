@@ -14,6 +14,13 @@ import {
   ServerAuthError,
 } from "@/lib/server-auth"
 import { UserRole } from "@/lib/auth"
+import {
+  DEFAULT_CHRONOS_SETTINGS,
+  DEFAULT_SHIFT_DEFINITIONS,
+  getDefaultCriteriaForDepartment,
+  type SiteSetupDepartmentInput,
+  type SiteSetupShiftDefinitionInput,
+} from "@/lib/site-setup-helpers"
 import bcrypt from "bcrypt"
 import crypto from "crypto"
 import { z } from "zod"
@@ -25,6 +32,46 @@ import { z } from "zod"
 export type ActionResult<T = unknown> = 
   | { success: true; data: T }
   | { success: false; error: string }
+
+const siteSetupRatingCriteriaSchema = z.object({
+  name: z.string().trim().min(1),
+  weight: z.number().int().min(0).max(100),
+})
+
+const siteSetupDepartmentSchema = z.object({
+  name: z.string().trim().min(1),
+  ratingCriteria: z.array(siteSetupRatingCriteriaSchema).optional(),
+})
+
+const siteSetupAdminSchema = z.object({
+  name: z.string().trim().min(2),
+  email: z.string().trim().email(),
+  departmentName: z.string().trim().optional(),
+  role: z.enum(["ADMIN", "MANAGER"]).optional(),
+})
+
+const siteSetupChronosSchema = z.object({
+  minEditableHour: z.number().int().min(0).max(23),
+  maxEditableHour: z.number().int().min(0).max(23),
+  requiresApproval: z.boolean(),
+  editingDurationMinutes: z.number().int().min(10).max(240),
+  sessionTimeoutMinutes: z.number().int().min(15).max(720),
+})
+
+const siteSetupShiftDefinitionSchema = z.object({
+  name: z.string().trim().min(1),
+  startHour: z.number().int().min(0).max(23),
+  endHour: z.number().int().min(0).max(23),
+  color: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/),
+})
+
+const setupNewSiteSchema = z.object({
+  siteName: z.string().trim().min(3).max(120),
+  departments: z.array(siteSetupDepartmentSchema).min(1).max(30),
+  adminUser: siteSetupAdminSchema,
+  chronosSettings: siteSetupChronosSchema,
+  shiftDefinitions: z.array(siteSetupShiftDefinitionSchema).min(1).max(20),
+})
 
 // ============================================
 // SITE MANAGEMENT (SUPER_ADMIN only)
@@ -84,6 +131,275 @@ export async function createSite(data: {
       return { success: false, error: error.message }
     }
     return { success: false, error: "Failed to create site" }
+  }
+}
+
+function normalizeSetupLabel(value: string) {
+  return value.trim().replace(/\s+/g, " ")
+}
+
+function toSetupKey(value: string) {
+  return normalizeSetupLabel(value).toLocaleLowerCase("tr-TR")
+}
+
+function dedupeByName<T extends { name: string }>(items: T[]) {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    const key = toSetupKey(item.name)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+export async function setupNewSite(data: {
+  siteName: string
+  departments: SiteSetupDepartmentInput[]
+  adminUser: {
+    name: string
+    email: string
+    departmentName?: string
+    role?: "ADMIN" | "MANAGER"
+  }
+  chronosSettings?: {
+    minEditableHour: number
+    maxEditableHour: number
+    requiresApproval: boolean
+    editingDurationMinutes: number
+    sessionTimeoutMinutes: number
+  }
+  shiftDefinitions?: SiteSetupShiftDefinitionInput[]
+}): Promise<
+  ActionResult<{
+    site: any
+    departments: any[]
+    adminUser: any
+    tempPassword: string
+  }>
+> {
+  try {
+    const auth = await requireSuperAdmin()
+
+    const normalizedInput = {
+      ...data,
+      chronosSettings: data.chronosSettings ?? DEFAULT_CHRONOS_SETTINGS,
+      shiftDefinitions: data.shiftDefinitions ?? DEFAULT_SHIFT_DEFINITIONS,
+    }
+    const validated = setupNewSiteSchema.parse(normalizedInput)
+
+    const siteName = normalizeSetupLabel(validated.siteName)
+    const departmentInputs = validated.departments.map((department) => ({
+      ...department,
+      name: normalizeSetupLabel(department.name),
+      ratingCriteria: department.ratingCriteria?.map((criteria) => ({
+        ...criteria,
+        name: normalizeSetupLabel(criteria.name),
+      })),
+    }))
+    const dedupedDepartments = dedupeByName(departmentInputs)
+
+    if (dedupedDepartments.length !== departmentInputs.length) {
+      return { success: false, error: "Department names must be unique" }
+    }
+
+    if (validated.chronosSettings.minEditableHour >= validated.chronosSettings.maxEditableHour) {
+      return {
+        success: false,
+        error: "Min editable hour must be less than max editable hour",
+      }
+    }
+
+    const shiftDefinitions = validated.shiftDefinitions.map((shift) => ({
+      ...shift,
+      name: normalizeSetupLabel(shift.name),
+    }))
+    const dedupedShifts = dedupeByName(shiftDefinitions)
+
+    if (dedupedShifts.length !== shiftDefinitions.length) {
+      return { success: false, error: "Shift names must be unique" }
+    }
+
+    if (validated.adminUser.departmentName) {
+      const departmentKeySet = new Set(dedupedDepartments.map((department) => toSetupKey(department.name)))
+      if (!departmentKeySet.has(toSetupKey(validated.adminUser.departmentName))) {
+        return {
+          success: false,
+          error: "Admin department must match one of the selected departments",
+        }
+      }
+    }
+
+    const existingSite = await basePrisma.site.findFirst({
+      where: {
+        name: {
+          equals: siteName,
+          mode: "insensitive",
+        },
+      },
+      select: { id: true },
+    })
+
+    if (existingSite) {
+      return { success: false, error: "Site name already exists" }
+    }
+
+    const existingUser = await basePrisma.user.findUnique({
+      where: { email: validated.adminUser.email.trim() },
+      select: { id: true },
+    })
+
+    if (existingUser) {
+      return { success: false, error: "Email already exists" }
+    }
+
+    const tempPassword = crypto.randomBytes(9).toString("base64url")
+    const passwordHash = await bcrypt.hash(tempPassword, 12)
+
+    const result = await basePrisma.$transaction(async (tx) => {
+      const site = await tx.site.create({
+        data: { name: siteName },
+      })
+
+      const createdDepartments: any[] = []
+      const departmentMapByKey = new Map<string, any>()
+
+      for (const department of dedupedDepartments) {
+        const createdDepartment = await tx.department.create({
+          data: {
+            siteId: site.id,
+            name: department.name,
+          },
+        })
+        createdDepartments.push(createdDepartment)
+        departmentMapByKey.set(toSetupKey(createdDepartment.name), createdDepartment)
+      }
+
+      const selectedAdminDepartment =
+        validated.adminUser.departmentName
+          ? departmentMapByKey.get(toSetupKey(validated.adminUser.departmentName))
+          : createdDepartments[0] ?? null
+
+      const adminUser = await tx.user.create({
+        data: {
+          siteId: site.id,
+          departmentId: selectedAdminDepartment?.id ?? null,
+          role: (validated.adminUser.role ?? "ADMIN") as UserRole,
+          name: normalizeSetupLabel(validated.adminUser.name),
+          email: validated.adminUser.email.trim(),
+          isActive: true,
+          mustChangePassword: true,
+          createdByUserId: auth.userId,
+          passwordCredential: {
+            create: {
+              passwordHash,
+              passwordSetAt: new Date(),
+            },
+          },
+          security: {
+            create: {
+              twoFactorEnabled: false,
+            },
+          },
+        },
+        include: {
+          site: true,
+          department: true,
+        },
+      })
+
+      await tx.masterPanelSettings.create({
+        data: {
+          siteId: site.id,
+          minEditableHour: validated.chronosSettings.minEditableHour,
+          maxEditableHour: validated.chronosSettings.maxEditableHour,
+          requiresApproval: validated.chronosSettings.requiresApproval,
+          editingDurationMinutes: validated.chronosSettings.editingDurationMinutes,
+          sessionTimeoutMinutes: validated.chronosSettings.sessionTimeoutMinutes,
+        },
+      })
+
+      await tx.shiftDefinition.createMany({
+        data: dedupedShifts.map((shift) => ({
+          siteId: site.id,
+          name: shift.name,
+          startHour: shift.startHour,
+          endHour: shift.endHour,
+          color: shift.color,
+          isActive: true,
+        })),
+      })
+
+      const criteriaRows: Array<{
+        departmentId: string
+        name: string
+        weight: number
+        isActive: boolean
+      }> = []
+
+      for (const department of createdDepartments) {
+        const requestedDepartment = dedupedDepartments.find(
+          (item) => toSetupKey(item.name) === toSetupKey(department.name)
+        )
+        const sourceCriteria =
+          requestedDepartment?.ratingCriteria && requestedDepartment.ratingCriteria.length > 0
+            ? requestedDepartment.ratingCriteria
+            : getDefaultCriteriaForDepartment(department.name)
+
+        const uniqueCriteria = dedupeByName(
+          sourceCriteria
+            .map((criteria) => ({
+              name: normalizeSetupLabel(criteria.name),
+              weight: criteria.weight,
+            }))
+            .filter((criteria) => criteria.name.length > 0)
+        )
+
+        for (const criteria of uniqueCriteria) {
+          criteriaRows.push({
+            departmentId: department.id,
+            name: criteria.name,
+            weight: criteria.weight,
+            isActive: true,
+          })
+        }
+      }
+
+      if (criteriaRows.length > 0) {
+        await tx.ratingCriteria.createMany({
+          data: criteriaRows,
+        })
+      }
+
+      return {
+        site,
+        departments: createdDepartments,
+        adminUser,
+      }
+    })
+
+    revalidatePath("/admin/sites")
+    revalidatePath("/admin/departments")
+    revalidatePath("/admin/users")
+    revalidatePath("/admin/criteria")
+    revalidatePath("/admin/rating-criteria")
+
+    return {
+      success: true,
+      data: {
+        site: result.site,
+        departments: result.departments,
+        adminUser: result.adminUser,
+        tempPassword,
+      },
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: "Invalid setup payload" }
+    }
+    if (error instanceof ServerAuthError) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: "Failed to setup site" }
   }
 }
 
