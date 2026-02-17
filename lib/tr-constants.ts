@@ -203,7 +203,7 @@ export const TR = {
     validationShiftNameRequired: "Tum vardiya adlari doldurulmali",
     validationShiftUnique: "Vardiya adlari benzersiz olmali",
     validationShiftHours: "Vardiya saatleri 0-23 araliginda olmali",
-    validationShiftOverlap: "Vardiya saatleri cakismamali",
+    validationShiftSameHour: "Vardiya baslangic ve bitis saati ayni olamaz",
   },
 
   // Sites

@@ -84,29 +84,6 @@ function labelKey(value: string) {
   return normalizeLabel(value).toLocaleLowerCase("tr-TR")
 }
 
-function hasShiftOverlap(state: SiteSetupFormState) {
-  const coveredHours = new Array<string | null>(24).fill(null)
-
-  for (const shift of state.shiftDefinitions) {
-    if (shift.startHour === shift.endHour) {
-      return true
-    }
-
-    let hour = shift.startHour
-    let loopGuard = 0
-    while (hour !== shift.endHour && loopGuard < 24) {
-      if (coveredHours[hour]) {
-        return true
-      }
-      coveredHours[hour] = shift.name
-      hour = (hour + 1) % 24
-      loopGuard += 1
-    }
-  }
-
-  return false
-}
-
 function validateStep(step: number, state: SiteSetupFormState): SiteSetupFieldErrors {
   const errors: SiteSetupFieldErrors = {}
 
@@ -211,8 +188,9 @@ function validateStep(step: number, state: SiteSetupFormState): SiteSetupFieldEr
       errors.shiftDefinitions = TR.siteSetup.validationShiftHours
       return errors
     }
-    if (hasShiftOverlap(state)) {
-      errors.shiftDefinitions = TR.siteSetup.validationShiftOverlap
+    if (state.shiftDefinitions.some((shift) => shift.startHour === shift.endHour)) {
+      errors.shiftDefinitions = TR.siteSetup.validationShiftSameHour
+      return errors
     }
     return errors
   }
