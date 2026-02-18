@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import * as XLSX from "xlsx"
 import { AuthContext } from "@/lib/auth"
 import {
   Upload, FileText, Loader2, Sparkles, CheckCircle2, AlertCircle, ArrowRight,
@@ -10,6 +11,29 @@ import { cn } from "@/lib/utils"
 import { MODULE_LABELS, type ModuleKey } from "@/lib/ai-analysis/types"
 import type { FullReport, AnalyticsReport, AiNotesMap } from "@/lib/ai-analysis/types"
 import { AnalysisDashboard } from "@/components/analysis/analysis-dashboard"
+
+const MAX_RAW_UPLOAD_SIZE = 4 * 1024 * 1024 // 4MB - safe limit for Vercel
+
+function parseExcelInBrowser(file: File): Promise<Record<string, Record<string, unknown>[]>> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: "array" })
+        const sheets: Record<string, Record<string, unknown>[]> = {}
+        for (const name of workbook.SheetNames) {
+          sheets[name] = XLSX.utils.sheet_to_json(workbook.Sheets[name])
+        }
+        resolve(sheets)
+      } catch (err) {
+        reject(err)
+      }
+    }
+    reader.onerror = () => reject(new Error("Dosya okunamadi"))
+    reader.readAsArrayBuffer(file)
+  })
+}
 
 interface DataUploadCenterProps {
   auth: AuthContext
@@ -104,19 +128,37 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
     const allUploads: UploadRecord[] = []
     const errors: string[] = []
 
-    // Upload files one by one to avoid 413 body size limit
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i]
       setStatusMsg({ type: null, message: `Yukleniyor: ${i + 1}/${selectedFiles.length} - ${file.name}` })
 
       try {
-        const formData = new FormData()
-        formData.append("file", file)
-        formData.append("siteId", selectedSiteId)
-        formData.append("fileType", "EXCEL")
-        formData.append("analyticModule", "UNASSIGNED")
+        let res: Response
 
-        const res = await fetch("/api/data-upload/upload", { method: "POST", body: formData })
+        if (file.size > MAX_RAW_UPLOAD_SIZE) {
+          // Large file: parse in browser, send JSON
+          const parsedSheets = await parseExcelInBrowser(file)
+          res = await fetch("/api/data-upload/upload-parsed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              siteId: selectedSiteId,
+              fileName: file.name,
+              fileSize: file.size,
+              analyticModule: "UNASSIGNED",
+              parsedSheets,
+            }),
+          })
+        } else {
+          // Small file: upload normally
+          const formData = new FormData()
+          formData.append("file", file)
+          formData.append("siteId", selectedSiteId)
+          formData.append("fileType", "EXCEL")
+          formData.append("analyticModule", "UNASSIGNED")
+          res = await fetch("/api/data-upload/upload", { method: "POST", body: formData })
+        }
+
         const data = await res.json().catch(() => null)
 
         if (res.ok && data) {
@@ -126,7 +168,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
           errors.push(`${file.name}: ${data?.error || "basarisiz"}`)
         }
       } catch (e) {
-        errors.push(`${file.name}: baglanti hatasi`)
+        errors.push(`${file.name}: ${e instanceof Error ? e.message : "baglanti hatasi"}`)
       }
     }
 

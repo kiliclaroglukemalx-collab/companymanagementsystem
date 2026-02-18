@@ -48,6 +48,35 @@ export async function POST(req: NextRequest) {
 
     for (const upload of uploads) {
       const meta = upload.metaData as Record<string, unknown> | null
+      const assignedModule = (upload.assignments?.[0]?.analyticModule ||
+        upload.analyticModule ||
+        null) as ModuleKey | null
+
+      // Client-side parsed files: rebuild buffer from stored JSON
+      if (meta?.clientParsed && meta?.parsedSheets) {
+        try {
+          const XLSX = require("xlsx")
+          const wb = XLSX.utils.book_new()
+          const sheets = meta.parsedSheets as Record<string, Record<string, unknown>[]>
+          for (const [sheetName, rows] of Object.entries(sheets)) {
+            const ws = XLSX.utils.json_to_sheet(rows as Record<string, unknown>[])
+            XLSX.utils.book_append_sheet(wb, ws, sheetName)
+          }
+          const buffer = Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }))
+
+          parsedUploads.push({
+            uploadId: upload.id,
+            fileName: upload.fileName,
+            buffer,
+            assignedModule: assignedModule === "UNASSIGNED" ? null : assignedModule,
+          })
+        } catch (err) {
+          errors.push(`${upload.fileName}: client-parsed veri islenemedi`)
+        }
+        continue
+      }
+
+      // File-based uploads: read from disk
       const savedAs = meta?.savedAs as string | undefined
       if (!savedAs) {
         errors.push(`${upload.fileName}: dosya yolu bulunamadi`)
@@ -62,10 +91,6 @@ export async function POST(req: NextRequest) {
 
       try {
         const buffer = readFileSync(filePath)
-        const assignedModule = (upload.assignments?.[0]?.analyticModule ||
-          upload.analyticModule ||
-          null) as ModuleKey | null
-
         parsedUploads.push({
           uploadId: upload.id,
           fileName: upload.fileName,
