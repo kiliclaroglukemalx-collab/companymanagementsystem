@@ -8,9 +8,7 @@ import {
   Upload, FileText, Loader2, Sparkles, CheckCircle2, AlertCircle, ArrowRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MODULE_LABELS, type ModuleKey } from "@/lib/ai-analysis/types"
-import type { FullReport, AnalyticsReport, AiNotesMap } from "@/lib/ai-analysis/types"
-import { AnalysisDashboard } from "@/components/analysis/analysis-dashboard"
+import { type ModuleKey } from "@/lib/ai-analysis/types"
 
 const MAX_RAW_UPLOAD_SIZE = 4 * 1024 * 1024 // 4MB - safe limit for Vercel
 
@@ -72,11 +70,8 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
   const [moduleAssignments, setModuleAssignments] = useState<Record<string, ModuleKey>>({})
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" })
 
-  // Dashboard state
-  const [report, setReport] = useState<FullReport | null>(null)
+  // Compute state
   const [reportId, setReportId] = useState<string | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [deepLoading, setDeepLoading] = useState(false)
 
   useEffect(() => {
     loadSites()
@@ -281,16 +276,12 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
         return
       }
 
-      const computedReport: AnalyticsReport = data.report
       setReportId(data.reportId)
-
-      // Set initial report without AI notes
-      const fullReport: FullReport = { ...computedReport, aiNotes: {} }
-      setReport(fullReport)
-      setPhase("dashboard")
-
-      // Trigger AI notes in background
-      fetchAiNotes(data.reportId, false)
+      setStatusMsg({ type: "success", message: "Analiz basariyla olusturuldu! Anasayfadaki kartlarda gosteriliyor." })
+      setPhase("upload")
+      setUploadedRecords([])
+      setModuleAssignments({})
+      loadRecentUploads()
     } catch (e) {
       console.error("Compute error:", e)
       setStatusMsg({ type: "error", message: "Analiz olusturulamadi" })
@@ -298,55 +289,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
     }
   }
 
-  const fetchAiNotes = async (rId: string, deep: boolean) => {
-    if (deep) setDeepLoading(true)
-    else setAiLoading(true)
-
-    try {
-      const url = `/api/ai/note${deep ? "?deep=true" : ""}`
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reportId: rId }),
-      })
-
-      const data = await res.json()
-      if (res.ok && data.aiNotes) {
-        setReport((prev) => prev ? { ...prev, aiNotes: data.aiNotes as AiNotesMap } : prev)
-      }
-    } catch (e) {
-      console.error("AI note error:", e)
-    } finally {
-      if (deep) setDeepLoading(false)
-      else setAiLoading(false)
-    }
-  }
-
-  const handleDeepAnalysis = () => {
-    if (reportId) fetchAiNotes(reportId, true)
-  }
-
-  const handleBack = () => {
-    setPhase("upload")
-    setReport(null)
-    setReportId(null)
-    setUploadedRecords([])
-    setModuleAssignments({})
-  }
-
   // ═══ RENDER ═══
-
-  if (phase === "dashboard" && report) {
-    return (
-      <AnalysisDashboard
-        report={report}
-        aiLoading={aiLoading}
-        onBack={handleBack}
-        onDeepAnalysis={handleDeepAnalysis}
-        deepLoading={deepLoading}
-      />
-    )
-  }
 
   return (
     <div className="space-y-8">

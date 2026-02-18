@@ -1,48 +1,36 @@
-import type { ModuleData, AiNotesMap, ModuleKey } from "./types"
-import { SYSTEM_PROMPT, buildUserPrompt, buildDeepUserPrompt } from "./prompts"
+import { SYSTEM_PROMPT, buildCardPrompt } from "./prompts"
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
-interface GenerateNotesOptions {
-  modules: Partial<Record<ModuleKey, ModuleData>>
-  deep?: boolean
+export interface CardData {
+  mainValue: string
+  mainLabel: string
+  stats: { label: string; value: string }[]
+  chartData: { name: string; value: number }[]
 }
 
-function buildSummary(modules: Partial<Record<ModuleKey, ModuleData>>) {
-  const summary: Record<string, { kpis: { label: string; value: string }[]; tableNames: string[]; topRows: string[] }> = {}
-
-  for (const [mod, data] of Object.entries(modules)) {
-    if (!data) continue
-    summary[mod] = {
-      kpis: data.kpis.map((k) => ({ label: k.label, value: `${k.value}${k.unit ? " " + k.unit : ""}` })),
-      tableNames: data.tables.map((t) => t.title),
-      topRows: data.tables.flatMap((t) =>
-        t.rows.slice(0, 3).map((r) => {
-          const vals = Object.values(r).slice(0, 4).join(" | ")
-          return `${t.title}: ${vals}`
-        })
-      ),
-    }
-  }
-
-  return summary
+export interface ModuleCardResult {
+  card: CardData
+  note: string
 }
 
-export async function generateNotes(opts: GenerateNotesOptions): Promise<AiNotesMap> {
-  const { modules, deep = false } = opts
+export type CardResults = Record<string, ModuleCardResult>
 
+/**
+ * Excel'den cikarilan ham ozet verilerini AI'a gonderip
+ * DashboardCard formatinda yapilandirilmis veri + analiz notu alir.
+ */
+export async function generateCardData(
+  moduleSummaries: Record<string, string>
+): Promise<CardResults> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    console.warn("OPENAI_API_KEY not set, returning fallback notes")
-    return buildFallbackNotes(modules)
+    console.warn("OPENAI_API_KEY not set, returning fallback")
+    return buildFallback(moduleSummaries)
   }
 
-  const model = deep
-    ? (process.env.OPENAI_DEEP_MODEL || "gpt-4o")
-    : (process.env.OPENAI_MINI_MODEL || "gpt-4o-mini")
-
-  const summary = buildSummary(modules)
-  const userPrompt = deep ? buildDeepUserPrompt(summary) : buildUserPrompt(summary)
+  const model = process.env.OPENAI_MINI_MODEL || "gpt-4o-mini"
+  const userPrompt = buildCardPrompt(moduleSummaries)
 
   try {
     const response = await fetch(OPENAI_API_URL, {
@@ -53,8 +41,8 @@ export async function generateNotes(opts: GenerateNotesOptions): Promise<AiNotes
       },
       body: JSON.stringify({
         model,
-        temperature: 0.3,
-        max_tokens: deep ? 3000 : 1500,
+        temperature: 0.2,
+        max_tokens: 2500,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
@@ -65,31 +53,30 @@ export async function generateNotes(opts: GenerateNotesOptions): Promise<AiNotes
     if (!response.ok) {
       const errText = await response.text()
       console.error("OpenAI API error:", response.status, errText)
-      return buildFallbackNotes(modules)
+      return buildFallback(moduleSummaries)
     }
 
     const json = await response.json()
     const content = json.choices?.[0]?.message?.content || ""
-
     const parsed = parseJsonResponse(content)
+
     if (!parsed) {
-      console.error("Failed to parse AI response:", content.substring(0, 200))
-      return buildFallbackNotes(modules)
+      console.error("Failed to parse AI response:", content.substring(0, 300))
+      return buildFallback(moduleSummaries)
     }
 
-    const result: AiNotesMap = {}
-    for (const mod of Object.keys(modules)) {
-      const note = parsed[mod]
-      if (note && typeof note.short === "string" && note.detailed) {
-        result[mod as ModuleKey] = {
-          short: note.short,
-          detailed: {
-            summary: note.detailed.summary || "",
-            findings: Array.isArray(note.detailed.findings) ? note.detailed.findings : [],
-            risks: Array.isArray(note.detailed.risks) ? note.detailed.risks : [],
-            actions: Array.isArray(note.detailed.actions) ? note.detailed.actions : [],
-            checks: Array.isArray(note.detailed.checks) ? note.detailed.checks : [],
+    const result: CardResults = {}
+    for (const [mod, data] of Object.entries(parsed)) {
+      const d = data as any
+      if (d?.card && d?.note) {
+        result[mod] = {
+          card: {
+            mainValue: d.card.mainValue || "—",
+            mainLabel: d.card.mainLabel || mod,
+            stats: Array.isArray(d.card.stats) ? d.card.stats.slice(0, 4) : [],
+            chartData: Array.isArray(d.card.chartData) ? d.card.chartData : [],
           },
+          note: d.note || "",
         }
       }
     }
@@ -97,53 +84,43 @@ export async function generateNotes(opts: GenerateNotesOptions): Promise<AiNotes
     return result
   } catch (error) {
     console.error("OpenAI call failed:", error)
-    return buildFallbackNotes(modules)
+    return buildFallback(moduleSummaries)
   }
 }
 
 function parseJsonResponse(content: string): Record<string, any> | null {
   let text = content.trim()
-
-  // Remove markdown code fences
   const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/)
   if (fenceMatch) text = fenceMatch[1].trim()
 
   try {
     return JSON.parse(text)
   } catch {
-    // Try to find JSON object in the response
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[0])
-      } catch {
-        return null
-      }
+      try { return JSON.parse(jsonMatch[0]) } catch { return null }
     }
     return null
   }
 }
 
-function buildFallbackNotes(modules: Partial<Record<ModuleKey, ModuleData>>): AiNotesMap {
-  const result: AiNotesMap = {}
-
-  for (const mod of Object.keys(modules) as ModuleKey[]) {
-    const data = modules[mod]
-    if (!data) continue
-
-    const kpiSummary = data.kpis.map((k) => `${k.label}: ${k.value}${k.unit ? " " + k.unit : ""}`).join(", ")
-
+function buildFallback(moduleSummaries: Record<string, string>): CardResults {
+  const result: CardResults = {}
+  for (const mod of Object.keys(moduleSummaries)) {
     result[mod] = {
-      short: `${mod} modulu icin veriler islendi. Ozet: ${kpiSummary}. Detayli AI analizi icin API anahtari gereklidir.`,
-      detailed: {
-        summary: `${mod} modulu verileri basariyla hesaplandi. AI yorum servisi su an kullanilamiyor.`,
-        findings: [`Toplam ${data.kpis.length} KPI hesaplandi`, `${data.tables.length} tablo olusturuldu`],
-        risks: ["AI yorum servisi baglantisi kontrol edilmeli"],
-        actions: ["OPENAI_API_KEY ortam degiskenini kontrol edin"],
-        checks: ["API anahtari gecerliligi", "Model erisim yetkisi"],
+      card: {
+        mainValue: "—",
+        mainLabel: "Veri isleniyor",
+        stats: [
+          { label: "Durum", value: "API anahtari gerekli" },
+          { label: "Model", value: "GPT-4o-mini" },
+          { label: "Maliyet", value: "~$0.003" },
+          { label: "Islem", value: "Bekliyor" },
+        ],
+        chartData: [],
       },
+      note: `${mod} modulu verisi hazirlandi. OPENAI_API_KEY ortam degiskenini Vercel'de tanimlayin.`,
     }
   }
-
   return result
 }

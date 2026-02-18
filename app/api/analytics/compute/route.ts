@@ -3,9 +3,73 @@ import { getServerAuthContext } from "@/lib/server-auth"
 import { basePrisma } from "@/lib/prisma"
 import { readFileSync, existsSync } from "fs"
 import { join } from "path"
-import { computeModules, type ParsedUpload } from "@/lib/ai-analysis/excel-parser"
+import * as XLSX from "xlsx"
 import { computeRequestSchema } from "@/lib/ai-analysis/schema"
-import type { AnalyticsReport, ModuleKey } from "@/lib/ai-analysis/types"
+import { generateCardData, type CardResults } from "@/lib/ai-analysis/service"
+
+const MODULE_MAP: Record<string, string> = {
+  FINANS: "FINANS",
+  BON: "BON",
+  CASINO: "CASINO",
+  SPOR: "SPOR",
+  PLAYERS: "PLAYERS",
+}
+
+function extractTextSummary(buffer: Buffer, maxRows = 30): string {
+  try {
+    const wb = XLSX.read(buffer, { type: "buffer" })
+    const lines: string[] = []
+
+    for (const sheetName of wb.SheetNames) {
+      const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(wb.Sheets[sheetName])
+      if (rows.length === 0) continue
+
+      lines.push(`Sheet: ${sheetName} (${rows.length} satir)`)
+      const headers = Object.keys(rows[0])
+      lines.push(`Sutunlar: ${headers.join(", ")}`)
+
+      const sample = rows.slice(0, maxRows)
+      for (const row of sample) {
+        const vals = headers.map((h) => `${h}: ${row[h] ?? ""}`).join(" | ")
+        lines.push(vals)
+      }
+
+      if (rows.length > maxRows) {
+        lines.push(`... ve ${rows.length - maxRows} satir daha`)
+      }
+      lines.push("")
+    }
+
+    return lines.join("\n")
+  } catch (e) {
+    return `[Dosya parse edilemedi: ${e instanceof Error ? e.message : "bilinmeyen hata"}]`
+  }
+}
+
+function extractFromParsedSheets(parsedSheets: Record<string, Record<string, unknown>[]>, maxRows = 30): string {
+  const lines: string[] = []
+
+  for (const [sheetName, rows] of Object.entries(parsedSheets)) {
+    if (!Array.isArray(rows) || rows.length === 0) continue
+
+    lines.push(`Sheet: ${sheetName} (${rows.length} satir)`)
+    const headers = Object.keys(rows[0])
+    lines.push(`Sutunlar: ${headers.join(", ")}`)
+
+    const sample = rows.slice(0, maxRows)
+    for (const row of sample) {
+      const vals = headers.map((h) => `${h}: ${row[h] ?? ""}`).join(" | ")
+      lines.push(vals)
+    }
+
+    if (rows.length > maxRows) {
+      lines.push(`... ve ${rows.length - maxRows} satir daha`)
+    }
+    lines.push("")
+  }
+
+  return lines.join("\n")
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,90 +103,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Yuklemeler bulunamadi" }, { status: 404 })
     }
 
-    // Read file buffers
+    // Extract text summaries per module
+    const moduleSummaries: Record<string, string> = {}
     const uploadsBaseDir = process.env.VERCEL ? "/tmp" : process.cwd()
     const uploadsDir = join(uploadsBaseDir, "uploads")
-
-    const parsedUploads: ParsedUpload[] = []
     const errors: string[] = []
 
     for (const upload of uploads) {
       const meta = upload.metaData as Record<string, unknown> | null
-      const assignedModule = (upload.assignments?.[0]?.analyticModule ||
-        upload.analyticModule ||
-        null) as ModuleKey | null
+      const assignedModule = upload.assignments?.[0]?.analyticModule ||
+        upload.analyticModule || "GENEL"
 
-      // Client-side parsed files: rebuild buffer from stored JSON
+      const moduleKey = MODULE_MAP[assignedModule] || "GENEL"
+      let summary = ""
+
       if (meta?.clientParsed && meta?.parsedSheets) {
+        summary = extractFromParsedSheets(meta.parsedSheets as Record<string, Record<string, unknown>[]>)
+      } else {
+        const savedAs = meta?.savedAs as string | undefined
+        if (!savedAs) { errors.push(`${upload.fileName}: dosya yolu yok`); continue }
+        const filePath = join(uploadsDir, savedAs)
+        if (!existsSync(filePath)) { errors.push(`${upload.fileName}: dosya bulunamadi`); continue }
         try {
-          const XLSX = require("xlsx")
-          const wb = XLSX.utils.book_new()
-          const sheets = meta.parsedSheets as Record<string, Record<string, unknown>[]>
-          for (const [sheetName, rows] of Object.entries(sheets)) {
-            const ws = XLSX.utils.json_to_sheet(rows as Record<string, unknown>[])
-            XLSX.utils.book_append_sheet(wb, ws, sheetName)
-          }
-          const buffer = Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }))
-
-          parsedUploads.push({
-            uploadId: upload.id,
-            fileName: upload.fileName,
-            buffer,
-            assignedModule: assignedModule === "UNASSIGNED" ? null : assignedModule,
-          })
-        } catch (err) {
-          errors.push(`${upload.fileName}: client-parsed veri islenemedi`)
-        }
-        continue
+          const buffer = readFileSync(filePath)
+          summary = extractTextSummary(buffer)
+        } catch { errors.push(`${upload.fileName}: okunamadi`); continue }
       }
 
-      // File-based uploads: read from disk
-      const savedAs = meta?.savedAs as string | undefined
-      if (!savedAs) {
-        errors.push(`${upload.fileName}: dosya yolu bulunamadi`)
-        continue
-      }
-
-      const filePath = join(uploadsDir, savedAs)
-      if (!existsSync(filePath)) {
-        errors.push(`${upload.fileName}: dosya mevcut degil`)
-        continue
-      }
-
-      try {
-        const buffer = readFileSync(filePath)
-        parsedUploads.push({
-          uploadId: upload.id,
-          fileName: upload.fileName,
-          buffer,
-          assignedModule: assignedModule === "UNASSIGNED" ? null : assignedModule,
-        })
-      } catch (err) {
-        errors.push(`${upload.fileName}: dosya okunamadi`)
+      if (summary) {
+        const header = `--- ${upload.fileName} ---\n`
+        moduleSummaries[moduleKey] = (moduleSummaries[moduleKey] || "") + header + summary + "\n"
       }
     }
 
-    if (parsedUploads.length === 0) {
+    // Always include GENEL as a cross-module summary
+    if (!moduleSummaries.GENEL) {
+      moduleSummaries.GENEL = Object.entries(moduleSummaries)
+        .map(([mod, s]) => `[${mod}]\n${s.substring(0, 500)}`)
+        .join("\n\n")
+    }
+
+    if (Object.keys(moduleSummaries).length === 0) {
       return NextResponse.json(
-        { error: "Islenebilir dosya bulunamadi", details: errors },
+        { error: "Islenebilir veri bulunamadi", details: errors },
         { status: 400 }
       )
     }
 
-    // Compute modules
-    const modules = computeModules(parsedUploads)
-
-    // Determine period from upload dates
-    const dates = uploads.map((u) => u.createdAt).sort((a, b) => a.getTime() - b.getTime())
-    const periodStart = dates[0].toISOString().split("T")[0]
-    const periodEnd = dates[dates.length - 1].toISOString().split("T")[0]
-
-    const report: AnalyticsReport = {
-      site: site.name,
-      period: { start: periodStart, end: periodEnd },
-      modules,
-      generatedAt: new Date().toISOString(),
-    }
+    // Send to AI -> get card data + notes
+    const cardResults = await generateCardData(moduleSummaries)
 
     // Save to DB
     const analysis = await basePrisma.aIAnalysis.create({
@@ -130,18 +159,18 @@ export async function POST(req: NextRequest) {
         siteId,
         dataUploadId: uploads[0].id,
         analyticModule: "GENEL",
-        prompt: JSON.stringify({ uploadIds, parsedCount: parsedUploads.length }),
-        response: JSON.stringify(report),
-        model: "server-compute",
+        prompt: JSON.stringify({ uploadIds, modules: Object.keys(moduleSummaries) }),
+        response: JSON.stringify(cardResults),
+        model: process.env.OPENAI_MINI_MODEL || "gpt-4o-mini",
         tokensUsed: 0,
-        isPublished: false,
+        isPublished: true,
       },
     })
 
     return NextResponse.json({
       success: true,
       reportId: analysis.id,
-      report,
+      cardResults,
       warnings: errors.length > 0 ? errors : undefined,
     })
   } catch (error) {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
+import { useSite } from "@/lib/site-context"
 import dynamic from "next/dynamic"
 import { motion, AnimatePresence, LayoutGroup, cubicBezier } from "framer-motion"
 import { MicroHeader } from "@/components/dashboard/micro-header"
@@ -15,7 +16,7 @@ import {
   PersonnelSkeleton,
   MonolithSkeleton 
 } from "@/components/ui/skeleton-loaders"
-import { dashboardCards, type DashboardCard, type Brand } from "@/lib/dashboard-data"
+import { dashboardCards as defaultCards, type DashboardCard, type Brand } from "@/lib/dashboard-data"
 
 
 // Dynamic imports for heavy components - Apple style lazy loading
@@ -151,6 +152,41 @@ export default function DashboardPage() {
   )
 }
 
+// Map AI card results onto existing dashboard cards
+const CARD_MODULE_MAP: Record<string, string> = {
+  "aylik-simulasyon": "GENEL",
+  "finansal-analiz": "FINANS",
+  "bonus-btag": "BON",
+  "spor-analizi": "SPOR",
+  "casino-analizi": "CASINO",
+  "oyuncular-analizi": "PLAYERS",
+}
+
+function mergeCardsWithReport(
+  cards: DashboardCard[],
+  cardResults: Record<string, { card: { mainValue: string; mainLabel: string; stats: { label: string; value: string }[]; chartData: { name: string; value: number }[] }; note: string }> | null
+): DashboardCard[] {
+  if (!cardResults) return cards
+
+  return cards.map((card) => {
+    const moduleKey = CARD_MODULE_MAP[card.id]
+    if (!moduleKey) return card
+
+    const result = cardResults[moduleKey]
+    if (!result?.card) return card
+
+    return {
+      ...card,
+      data: {
+        mainValue: result.card.mainValue || card.data.mainValue,
+        mainLabel: result.card.mainLabel || card.data.mainLabel,
+        stats: result.card.stats?.length > 0 ? result.card.stats : card.data.stats,
+        chartData: result.card.chartData?.length > 0 ? result.card.chartData : card.data.chartData,
+      },
+    }
+  })
+}
+
 function DashboardContent({
   currentTheme,
   activeTab,
@@ -174,6 +210,27 @@ function DashboardContent({
   handleOpenDataWall: (brand: Brand) => void
   handleCloseDataWall: () => void
 }) {
+  const { selectedSite } = useSite()
+  const [dashboardCards, setDashboardCards] = useState<DashboardCard[]>(defaultCards)
+
+  useEffect(() => {
+    async function fetchLatestReport() {
+      try {
+        const res = await fetch(`/api/analytics/latest?siteId=${selectedSite.id}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.cardResults) {
+          setDashboardCards(mergeCardsWithReport(defaultCards, data.cardResults))
+        } else {
+          setDashboardCards(defaultCards)
+        }
+      } catch {
+        setDashboardCards(defaultCards)
+      }
+    }
+    fetchLatestReport()
+  }, [selectedSite.id])
+
   return (
     <LayoutGroup>
       <div 
