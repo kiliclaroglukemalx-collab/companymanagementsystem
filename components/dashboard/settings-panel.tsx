@@ -2038,12 +2038,12 @@ function YonetimBildirimContent() {
           }}
         >
           Okunma Gecmisi
-          {readRecords.length > 0 && (
+          {announcements.length > 0 && (
             <span 
               className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center"
               style={{ background: '#10b981', color: '#fff' }}
             >
-              {readRecords.length}
+              {announcements.reduce((sum, a) => sum + (a._count?.readRecords || 0), 0)}
             </span>
           )}
         </button>
