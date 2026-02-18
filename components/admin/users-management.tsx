@@ -127,11 +127,8 @@ export function UsersManagement({
   const [filterSiteId, setFilterSiteId] = useState<string>("all")
   const [filterRole, setFilterRole] = useState<string>("all")
   
-  // Get available roles based on current user role
-  const availableRoles =
-    currentUserRole === "SUPER_ADMIN"
-      ? roleOptions
-      : roleOptions.filter((r) => r !== "SUPER_ADMIN" && r !== "ADMIN")
+  // All roles available (only SUPER_ADMIN can access this page)
+  const availableRoles = roleOptions
   
   // Filter departments based on selected site
   const availableDepartments = formData.siteId
@@ -604,11 +601,6 @@ export function UsersManagement({
                     ))}
                   </SelectContent>
                 </Select>
-                {currentUserRole === "ADMIN" && (
-                  <p className="text-xs text-slate-500">
-                    You can only assign MANAGER or STAFF roles
-                  </p>
-                )}
               </div>
             </div>
           )}

@@ -607,19 +607,15 @@ export async function listUsers(filters?: {
   limit?: number
 }): Promise<ActionResult<{ users: any[]; total: number; page: number; totalPages: number }>> {
   try {
-    const auth = await requireAdminOrAbove()
+    await requireSuperAdmin()
     
     const page = filters?.page || 1
     const limit = filters?.limit || 50
     const skip = (page - 1) * limit
     
-    // SUPER_ADMIN can see all users
-    // ADMIN can only see users from their site
     const whereClause: any = {}
     
-    if (auth.role === "ADMIN") {
-      whereClause.siteId = auth.siteId
-    } else if (filters?.siteId) {
+    if (filters?.siteId) {
       whereClause.siteId = filters.siteId
     }
     
@@ -684,7 +680,7 @@ export async function listUsers(filters?: {
 
 export async function getUser(id: string): Promise<ActionResult<any>> {
   try {
-    const auth = await requireAdminOrAbove()
+    await requireSuperAdmin()
     
     const user = await basePrisma.user.findUnique({
       where: { id },
@@ -705,9 +701,6 @@ export async function getUser(id: string): Promise<ActionResult<any>> {
       return { success: false, error: "User not found" }
     }
     
-    // Check site access
-    assertSiteAccess(auth, user.siteId)
-    
     return { success: true, data: user }
   } catch (error) {
     if (error instanceof ServerAuthError) {
@@ -726,7 +719,7 @@ export async function createUser(data: {
   isActive?: boolean
 }): Promise<ActionResult<{ user: any; tempPassword: string }>> {
   try {
-    const auth = await requireAdminOrAbove()
+    const auth = await requireSuperAdmin()
     
     // Validate input
     if (!data.name?.trim()) {
@@ -739,19 +732,6 @@ export async function createUser(data: {
     
     if (!data.siteId) {
       return { success: false, error: "Site is required" }
-    }
-    
-    // Check site access
-    assertSiteAccess(auth, data.siteId)
-    
-    // ADMIN cannot create SUPER_ADMIN or ADMIN
-    if (auth.role === "ADMIN") {
-      if (data.role === "SUPER_ADMIN" || data.role === "ADMIN") {
-        return {
-          success: false,
-          error: "You cannot create users with SUPER_ADMIN or ADMIN role",
-        }
-      }
     }
     
     // Check if email already exists
@@ -815,9 +795,8 @@ export async function updateUser(
   }
 ): Promise<ActionResult<any>> {
   try {
-    const auth = await requireAdminOrAbove()
+    await requireSuperAdmin()
     
-    // Get user to check site access
     const existingUser = await basePrisma.user.findUnique({
       where: { id },
       select: { siteId: true, role: true },
@@ -825,19 +804,6 @@ export async function updateUser(
     
     if (!existingUser) {
       return { success: false, error: "User not found" }
-    }
-    
-    assertSiteAccess(auth, existingUser.siteId)
-    
-    // ADMIN cannot modify SUPER_ADMIN or ADMIN users
-    if (auth.role === "ADMIN") {
-      if (existingUser.role === "SUPER_ADMIN" || existingUser.role === "ADMIN") {
-        return { success: false, error: "You cannot modify admin users" }
-      }
-      
-      if (data.role && (data.role === "SUPER_ADMIN" || data.role === "ADMIN")) {
-        return { success: false, error: "You cannot assign admin roles" }
-      }
     }
     
     const updateData: any = {}
@@ -869,7 +835,7 @@ export async function toggleUserActive(
   isActive: boolean
 ): Promise<ActionResult<any>> {
   try {
-    const auth = await requireAdminOrAbove()
+    await requireSuperAdmin()
     
     const existingUser = await basePrisma.user.findUnique({
       where: { id },
@@ -878,15 +844,6 @@ export async function toggleUserActive(
     
     if (!existingUser) {
       return { success: false, error: "User not found" }
-    }
-    
-    assertSiteAccess(auth, existingUser.siteId)
-    
-    // ADMIN cannot deactivate SUPER_ADMIN or ADMIN
-    if (auth.role === "ADMIN") {
-      if (existingUser.role === "SUPER_ADMIN" || existingUser.role === "ADMIN") {
-        return { success: false, error: "You cannot modify admin users" }
-      }
     }
     
     const user = await basePrisma.user.update({

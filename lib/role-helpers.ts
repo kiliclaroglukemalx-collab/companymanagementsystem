@@ -38,7 +38,7 @@ export function isLimitedAccess(role: UserRole): boolean {
  * @returns true if SUPER_ADMIN or ADMIN
  */
 export function canManageUsers(role: UserRole): boolean {
-  return isAdminLike(role)
+  return isSuperAdmin(role)
 }
 
 /**

@@ -1845,213 +1845,47 @@ function NotificationToggleRow({
 
 
 
-// Admin: Management Notifications Center - Complete Redesign
+// Admin: Management Notifications Center - Database Connected
 export interface Announcement {
   id: string
   title: string
   content: string
-  severity: 'info' | 'warning' | 'critical'
-  targetAudience: string[]
-  targetSites: string[]
-  targetUnits: string[]
+  severity: string
+  targetType: string
+  targetSiteId: string | null
+  targetDepartmentId: string | null
+  targetRole: string | null
   showAsPopup: boolean
-  displayMode: 'every_login' | 'once' // Her giriste veya sadece bir kez
-  removeOnRead: boolean // Okundu yapilinca kaldirilsin mi
-  activeDays: string[] // Hangi gunler aktif olacak (Pzt, Sal, Car, Per, Cum, Cmt, Paz)
+  displayMode: string
+  removeOnRead: boolean
+  activeDays: string[]
   isActive: boolean
-  expiresAt?: Date
-  createdAt: Date
-  createdBy: string
+  expiresAt: string | null
+  createdAt: string
+  createdByUserId: string
+  targetSite?: { name: string } | null
+  targetDepartment?: { name: string } | null
+  _count?: { readRecords: number }
 }
 
-// Global announcements store (mock - simulating backend)
-export const announcementsStore: Announcement[] = [
-  {
-    id: 'ann1',
-    title: 'Sistem Bakimi Duyurusu',
-    content: 'Yarin 02:00-04:00 arasi planlı sistem bakimi yapilacaktir.',
-    severity: 'warning',
-    targetAudience: ['all'],
-    targetSites: ['all'],
-    targetUnits: ['all'],
-    showAsPopup: true,
-    displayMode: 'every_login',
-    removeOnRead: false,
-    activeDays: ['Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt', 'Paz'],
-    isActive: true,
-    createdAt: new Date('2026-01-29T10:00:00'),
-    createdBy: 'Ahmet Yilmaz',
-  },
-  {
-    id: 'ann2',
-    title: 'Yeni Performans Modulu',
-    content: 'Arena bolumu yeni ozelliklerle guncellendi.',
-    severity: 'info',
-    targetAudience: ['mudur', 'personel'],
-    targetSites: ['all'],
-    targetUnits: ['all'],
-    showAsPopup: false,
-    displayMode: 'once',
-    removeOnRead: true,
-    activeDays: ['Pzt', 'Sal', 'Car', 'Per', 'Cum'],
-    isActive: true,
-    createdAt: new Date('2026-01-28T14:30:00'),
-    createdBy: 'Sistem',
-  },
-]
-
-// Track dismissed announcements per user with localStorage persistence
-const DISMISSED_STORAGE_KEY = 'cms_dismissed_announcements'
-
-// Initialize from localStorage
-const getInitialDismissed = (): Set<string> => {
-  if (typeof window === 'undefined') return new Set()
-  try {
-    const stored = localStorage.getItem(DISMISSED_STORAGE_KEY)
-    return stored ? new Set(JSON.parse(stored)) : new Set()
-  } catch {
-    return new Set()
-  }
-}
-
-// Create a proxy-like object to auto-save to localStorage
-class PersistentDismissedSet {
-  private set: Set<string>
-  
-  constructor() {
-    this.set = new Set()
-    // Load from localStorage on client side
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(DISMISSED_STORAGE_KEY)
-        if (stored) {
-          this.set = new Set(JSON.parse(stored))
-        }
-      } catch {}
-    }
-  }
-  
-  has(id: string): boolean {
-    return this.set.has(id)
-  }
-  
-  add(id: string): void {
-    this.set.add(id)
-    this.persist()
-  }
-  
-  delete(id: string): boolean {
-    const result = this.set.delete(id)
-    this.persist()
-    return result
-  }
-  
-  clear(): void {
-    this.set.clear()
-    this.persist()
-  }
-  
-  private persist(): void {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify([...this.set]))
-      } catch {}
-    }
-  }
-}
-
-export const dismissedAnnouncements = new PersistentDismissedSet()
-
-// Track read records for management view
-export interface ReadRecord {
-  id: string
-  announcementId: string
-  announcementTitle: string
-  userId: string
-  userName: string
-  userRole: string
-  readAt: Date
-}
-
-export const readRecordsStore: ReadRecord[] = [
-  {
-    id: 'rr1',
-    announcementId: 'ann1',
-    announcementTitle: 'Sistem Bakimi Duyurusu',
-    userId: 'u2',
-    userName: 'Ayse Demir',
-    userRole: 'Personel',
-    readAt: new Date('2026-01-29T11:30:00'),
-  },
-  {
-    id: 'rr2',
-    announcementId: 'ann1',
-    announcementTitle: 'Sistem Bakimi Duyurusu',
-    userId: 'u4',
-    userName: 'Elif Yildiz',
-    userRole: 'Genel Mudur',
-    readAt: new Date('2026-01-29T10:45:00'),
-  },
-]
-
-// Function to add read record (called from popup)
-export const addReadRecord = (announcementId: string, announcementTitle: string) => {
-  const record: ReadRecord = {
-    id: `rr-${Date.now()}`,
-    announcementId,
-    announcementTitle,
-    userId: 'current-user',
-    userName: 'Ahmet Yilmaz', // Current mock user
-    userRole: 'Birim Muduru',
-    readAt: new Date(),
-  }
-  readRecordsStore.unshift(record)
-  return record
-}
-
-const mockAnnouncements = announcementsStore
-
-const audienceOptions = [
-  { id: 'all', label: 'Tum Kullanicilar' },
-  { id: 'admin', label: 'Sadece Admin' },
-  { id: 'genel_mudur', label: 'Sadece Genel Mudur' },
-  { id: 'mudur', label: 'Sadece Mudur' },
-  { id: 'birim_muduru', label: 'Sadece Birim Muduru' },
-  { id: 'personel', label: 'Sadece Personel' },
-]
-
-const mockSites = [
-  { id: 'site1', label: 'Golden Palace' },
-  { id: 'site2', label: 'Royal Casino' },
-  { id: 'site3', label: 'Diamond Club' },
-]
-
-const mockUnits = [
-  { id: 'unit1', label: 'Risk' },
-  { id: 'unit2', label: 'Finans' },
-  { id: 'unit3', label: 'Bonus' },
-  { id: 'unit4', label: 'Canli Destek' },
-]
 
 function YonetimBildirimContent() {
   const [activeSubTab, setActiveSubTab] = useState<'announcements' | 'history' | 'operations'>('announcements')
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements)
-  const [readRecords, setReadRecords] = useState<ReadRecord[]>(readRecordsStore)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   
   // Create form state
   const [formTitle, setFormTitle] = useState('')
   const [formContent, setFormContent] = useState('')
-  const [formSeverity, setFormSeverity] = useState<'info' | 'warning' | 'critical'>('info')
-  const [formAudience, setFormAudience] = useState<string[]>(['all'])
-  const [formSites, setFormSites] = useState<string[]>(['all'])
-  const [formUnits, setFormUnits] = useState<string[]>(['all'])
+  const [formSeverity, setFormSeverity] = useState<'INFO' | 'WARNING' | 'CRITICAL'>('INFO')
+  const [formTargetType, setFormTargetType] = useState<string>('ALL')
   const [formShowPopup, setFormShowPopup] = useState(false)
-  const [formDisplayMode, setFormDisplayMode] = useState<'every_login' | 'once'>('once')
+  const [formDisplayMode, setFormDisplayMode] = useState<'EVERY_LOGIN' | 'ONCE'>('ONCE')
   const [formRemoveOnRead, setFormRemoveOnRead] = useState(false)
   const [formActiveDays, setFormActiveDays] = useState<string[]>(['Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt', 'Paz'])
   const [formExpiresAt, setFormExpiresAt] = useState('')
-  const [showSiteDropdown, setShowSiteDropdown] = useState(false)
 
   // Operations state
   const [shiftWindowStart, setShiftWindowStart] = useState('Cumartesi 20:00')
@@ -2060,84 +1894,122 @@ function YonetimBildirimContent() {
   const [notifyOnWindowStart, setNotifyOnWindowStart] = useState(true)
   const [escalationEnabled, setEscalationEnabled] = useState(true)
 
+  // Fetch announcements from API
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const res = await fetch('/api/announcements?showAll=true')
+      if (res.ok) {
+        const data = await res.json()
+        setAnnouncements(data.announcements || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch announcements:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAnnouncements()
+  }, [fetchAnnouncements])
+
   const resetForm = () => {
     setFormTitle('')
     setFormContent('')
-    setFormSeverity('info')
-    setFormAudience(['all'])
-    setFormSites(['all'])
-    setFormUnits(['all'])
-setFormShowPopup(false)
-  setFormDisplayMode('once')
-  setFormRemoveOnRead(false)
-  setFormActiveDays(['Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt', 'Paz'])
-  setFormExpiresAt('')
-  setShowCreateForm(false)
+    setFormSeverity('INFO')
+    setFormTargetType('ALL')
+    setFormShowPopup(false)
+    setFormDisplayMode('ONCE')
+    setFormRemoveOnRead(false)
+    setFormActiveDays(['Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt', 'Paz'])
+    setFormExpiresAt('')
+    setShowCreateForm(false)
   }
 
-  const createAnnouncement = () => {
+  const createAnnouncement = async () => {
     if (!formTitle.trim() || !formContent.trim()) return
 
-    const newAnnouncement: Announcement = {
-      id: `ann-${Date.now()}`,
-      title: formTitle,
-      content: formContent,
-      severity: formSeverity,
-      targetAudience: formAudience,
-      targetSites: formSites,
-      targetUnits: formUnits,
-showAsPopup: formShowPopup,
-  displayMode: formDisplayMode,
-  removeOnRead: formRemoveOnRead,
-  activeDays: formActiveDays,
-  isActive: true,
-  expiresAt: formExpiresAt ? new Date(formExpiresAt) : undefined,
-      createdAt: new Date(),
-      createdBy: 'Ahmet Yilmaz',
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formTitle,
+          content: formContent,
+          severity: formSeverity,
+          targetType: formTargetType,
+          showAsPopup: formShowPopup,
+          displayMode: formDisplayMode,
+          removeOnRead: formRemoveOnRead,
+          activeDays: formActiveDays,
+          expiresAt: formExpiresAt || null,
+        }),
+      })
+
+      if (res.ok) {
+        await fetchAnnouncements()
+        resetForm()
+      }
+    } catch (err) {
+      console.error('Failed to create announcement:', err)
+    } finally {
+      setIsSaving(false)
     }
-
-    setAnnouncements(prev => [newAnnouncement, ...prev])
-    // Also add to global store
-    announcementsStore.unshift(newAnnouncement)
-    
-    addManagementEvent({
-      type: 'system',
-      action: 'Duyuru olusturuldu',
-      target: formTitle,
-      admin: 'Ahmet Yilmaz',
-      details: `Hedef: ${formAudience.includes('all') ? 'Tum kullanicilar' : formAudience.join(', ')}`,
-    })
-
-    resetForm()
   }
 
-  const toggleAudienceSelection = (id: string) => {
-    if (id === 'all') {
-      setFormAudience(['all'])
-    } else {
-      setFormAudience(prev => {
-        const filtered = prev.filter(a => a !== 'all')
-        if (filtered.includes(id)) {
-          return filtered.filter(a => a !== id)
-        }
-        return [...filtered, id]
+  const deleteAnnouncement = async (id: string) => {
+    try {
+      const res = await fetch(`/api/announcements/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setAnnouncements(prev => prev.filter(a => a.id !== id))
+      }
+    } catch (err) {
+      console.error('Failed to delete announcement:', err)
+    }
+  }
+
+  const toggleAnnouncementActive = async (id: string, isActive: boolean) => {
+    try {
+      const res = await fetch(`/api/announcements/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
       })
+      if (res.ok) {
+        setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isActive } : a))
+      }
+    } catch (err) {
+      console.error('Failed to toggle announcement:', err)
     }
   }
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return '#ef4444'
-      case 'warning': return '#f59e0b'
+    switch (severity.toUpperCase()) {
+      case 'CRITICAL': return '#ef4444'
+      case 'WARNING': return '#f59e0b'
       default: return '#3b82f6'
     }
   }
 
   const getSeverityLabel = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'Kritik'
-      case 'warning': return 'Uyari'
+    switch (severity.toUpperCase()) {
+      case 'CRITICAL': return 'Kritik'
+      case 'WARNING': return 'Uyari'
       default: return 'Bilgi'
+    }
+  }
+
+  const getTargetTypeLabel = (targetType: string) => {
+    switch (targetType) {
+      case 'ALL': return 'Tum kullanicilar'
+      case 'ADMIN_ONLY': return 'Sadece Admin'
+      case 'STAFF_ONLY': return 'Sadece Personel'
+      case 'SITE_SPECIFIC': return 'Belirli Site'
+      case 'DEPARTMENT_SPECIFIC': return 'Belirli Birim'
+      case 'ROLE_SPECIFIC': return 'Belirli Rol'
+      default: return targetType
     }
   }
 
@@ -2256,7 +2128,7 @@ showAsPopup: formShowPopup,
                   <div>
                     <label className="text-[10px] font-semibold text-neutral-500 mb-2 block tracking-wider">ONEM SEVIYESI</label>
                     <div className="flex gap-2">
-                      {(['info', 'warning', 'critical'] as const).map(sev => (
+                      {(['INFO', 'WARNING', 'CRITICAL'] as const).map(sev => (
                         <button
                           key={sev}
                           onClick={() => setFormSeverity(sev)}
@@ -2273,269 +2145,27 @@ showAsPopup: formShowPopup,
                     </div>
                   </div>
 
-                  {/* Target Audience */}
+                  {/* Target Type */}
                   <div>
                     <label className="text-[10px] font-semibold text-neutral-500 mb-2 block tracking-wider">HEDEF KITLE</label>
                     <div className="flex flex-wrap gap-2">
-                      {audienceOptions.map(opt => (
+                      {[
+                        { id: 'ALL', label: 'Tum Kullanicilar' },
+                        { id: 'ADMIN_ONLY', label: 'Sadece Admin' },
+                        { id: 'STAFF_ONLY', label: 'Sadece Personel' },
+                        { id: 'ROLE_SPECIFIC', label: 'Belirli Rol' },
+                      ].map(opt => (
                         <button
                           key={opt.id}
-                          onClick={() => toggleAudienceSelection(opt.id)}
+                          onClick={() => setFormTargetType(opt.id)}
                           className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
                           style={{
-                            background: formAudience.includes(opt.id) ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${formAudience.includes(opt.id) ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.08)'}`,
-                            color: formAudience.includes(opt.id) ? '#a855f7' : '#737373',
+                            background: formTargetType === opt.id ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${formTargetType === opt.id ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.08)'}`,
+                            color: formTargetType === opt.id ? '#a855f7' : '#737373',
                           }}
                         >
                           {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Target Sites */}
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-semibold text-neutral-500 block tracking-wider">SITE SECIMI</label>
-                    
-                    {/* Site Mode Selection */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setFormSites(['all'])}
-                        className="p-4 rounded-xl text-left transition-all"
-                        style={{
-                          background: formSites.includes('all') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.02)',
-                          border: `1px solid ${formSites.includes('all') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-5 h-5 rounded-full flex items-center justify-center"
-                            style={{ 
-                              border: `2px solid ${formSites.includes('all') ? '#10b981' : '#404040'}`,
-                              background: formSites.includes('all') ? '#10b981' : 'transparent'
-                            }}
-                          >
-                            {formSites.includes('all') && <Check size={12} className="text-white" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium" style={{ color: formSites.includes('all') ? '#10b981' : '#a3a3a3' }}>Tum Siteler</p>
-                            <p className="text-[10px] text-neutral-500">Duyuru tum sitelerde gosterilir</p>
-                          </div>
-                        </div>
-                      </button>
-                      
-                      <button
-                        onClick={() => setFormSites([])}
-                        className="p-4 rounded-xl text-left transition-all"
-                        style={{
-                          background: !formSites.includes('all') ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)',
-                          border: `1px solid ${!formSites.includes('all') ? 'rgba(59, 130, 246, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-5 h-5 rounded-full flex items-center justify-center"
-                            style={{ 
-                              border: `2px solid ${!formSites.includes('all') ? '#3b82f6' : '#404040'}`,
-                              background: !formSites.includes('all') ? '#3b82f6' : 'transparent'
-                            }}
-                          >
-                            {!formSites.includes('all') && <Check size={12} className="text-white" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium" style={{ color: !formSites.includes('all') ? '#3b82f6' : '#a3a3a3' }}>Belirli Siteler</p>
-                            <p className="text-[10px] text-neutral-500">Sadece secilen sitelerde gosterilir</p>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-
-                    {/* Site Selection (only show when specific sites selected) */}
-                    {!formSites.includes('all') && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="relative mt-2">
-                          {/* Dropdown Trigger */}
-                          <button
-                            onClick={() => setShowSiteDropdown(!showSiteDropdown)}
-                            className="w-full p-3 rounded-xl flex items-center justify-between transition-all"
-                            style={{ 
-                              background: 'rgba(59, 130, 246, 0.05)', 
-                              border: `1px solid ${showSiteDropdown ? 'rgba(59, 130, 246, 0.4)' : 'rgba(59, 130, 246, 0.15)'}` 
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Globe size={14} className="text-blue-400" />
-                              <span className="text-sm text-neutral-300">
-                                {formSites.length === 0 
-                                  ? 'Site secin...' 
-                                  : formSites.length === mockSites.length 
-                                    ? 'Tum siteler secili' 
-                                    : `${formSites.length} site secili`}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {formSites.length > 0 && (
-                                <span 
-                                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                                  style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}
-                                >
-                                  {formSites.length}
-                                </span>
-                              )}
-                              <ChevronDown 
-                                size={16} 
-                                className="text-blue-400 transition-transform"
-                                style={{ transform: showSiteDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                              />
-                            </div>
-                          </button>
-
-                          {/* Dropdown Menu */}
-                          <AnimatePresence>
-                            {showSiteDropdown && (
-                              <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden z-20"
-                                style={{ 
-                                  background: 'rgba(15, 15, 15, 0.98)', 
-                                  border: '1px solid rgba(59, 130, 246, 0.2)',
-                                  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
-                                }}
-                              >
-                                {/* Select All Option */}
-                                <button
-                                  onClick={() => {
-                                    if (formSites.length === mockSites.length) {
-                                      setFormSites([])
-                                    } else {
-                                      setFormSites(mockSites.map(s => s.id))
-                                    }
-                                  }}
-                                  className="w-full p-3 flex items-center justify-between transition-all"
-                                  style={{ 
-                                    background: formSites.length === mockSites.length ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                                    borderBottom: '1px solid rgba(255,255,255,0.06)'
-                                  }}
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div 
-                                      className="w-5 h-5 rounded flex items-center justify-center"
-                                      style={{ 
-                                        background: formSites.length === mockSites.length ? '#10b981' : 'transparent',
-                                        border: `2px solid ${formSites.length === mockSites.length ? '#10b981' : '#404040'}`
-                                      }}
-                                    >
-                                      {formSites.length === mockSites.length && <Check size={12} className="text-white" />}
-                                    </div>
-                                    <span className="text-sm font-medium" style={{ color: formSites.length === mockSites.length ? '#10b981' : '#a3a3a3' }}>
-                                      Tum Siteleri Sec
-                                    </span>
-                                  </div>
-                                  <span className="text-[10px] text-neutral-500">{mockSites.length} site</span>
-                                </button>
-
-                                {/* Individual Sites */}
-                                <div className="max-h-48 overflow-y-auto">
-                                  {mockSites.map((site, index) => (
-                                    <button
-                                      key={site.id}
-                                      onClick={() => {
-                                        setFormSites(prev => {
-                                          if (prev.includes(site.id)) {
-                                            return prev.filter(s => s !== site.id)
-                                          }
-                                          return [...prev, site.id]
-                                        })
-                                      }}
-                                      className="w-full p-3 flex items-center gap-3 transition-all"
-                                      style={{ 
-                                        background: formSites.includes(site.id) ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                        borderBottom: index < mockSites.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none'
-                                      }}
-                                    >
-                                      <div 
-                                        className="w-5 h-5 rounded flex items-center justify-center"
-                                        style={{ 
-                                          background: formSites.includes(site.id) ? '#3b82f6' : 'transparent',
-                                          border: `2px solid ${formSites.includes(site.id) ? '#3b82f6' : '#404040'}`
-                                        }}
-                                      >
-                                        {formSites.includes(site.id) && <Check size={12} className="text-white" />}
-                                      </div>
-                                      <span className="text-sm" style={{ color: formSites.includes(site.id) ? '#60a5fa' : '#a3a3a3' }}>
-                                        {site.label}
-                                      </span>
-                                    </button>
-                                  ))}
-                                </div>
-
-                                {/* Footer */}
-                                <div 
-                                  className="p-3 flex items-center justify-between"
-                                  style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.3)' }}
-                                >
-                                  <span className="text-[10px] text-neutral-500">
-                                    {formSites.length} / {mockSites.length} site secili
-                                  </span>
-                                  <button
-                                    onClick={() => setShowSiteDropdown(false)}
-                                    className="px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
-                                    style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}
-                                  >
-                                    Tamam
-                                  </button>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* Target Units */}
-                  <div>
-                    <label className="text-[10px] font-semibold text-neutral-500 mb-2 block tracking-wider">BIRIM SECIMI</label>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => setFormUnits(['all'])}
-                        className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                        style={{
-                          background: formUnits.includes('all') ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${formUnits.includes('all') ? 'rgba(59, 130, 246, 0.4)' : 'rgba(255,255,255,0.08)'}`,
-                          color: formUnits.includes('all') ? '#3b82f6' : '#737373',
-                        }}
-                      >
-                        Tumu
-                      </button>
-                      {mockUnits.map(unit => (
-                        <button
-                          key={unit.id}
-                          onClick={() => {
-                            setFormUnits(prev => {
-                              const filtered = prev.filter(u => u !== 'all')
-                              if (filtered.includes(unit.id)) {
-                                return filtered.filter(u => u !== unit.id)
-                              }
-                              return [...filtered, unit.id]
-                            })
-                          }}
-                          className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                          style={{
-                            background: formUnits.includes(unit.id) ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${formUnits.includes(unit.id) ? 'rgba(59, 130, 246, 0.4)' : 'rgba(255,255,255,0.08)'}`,
-                            color: formUnits.includes(unit.id) ? '#3b82f6' : '#737373',
-                          }}
-                        >
-                          {unit.label}
                         </button>
                       ))}
                     </div>
@@ -2559,42 +2189,42 @@ showAsPopup: formShowPopup,
                       <label className="text-[10px] font-semibold text-neutral-500 mb-2 block tracking-wider">GOSTERIM MODU</label>
                       <div className="flex gap-3">
                         <button
-                          onClick={() => setFormDisplayMode('once')}
+                          onClick={() => setFormDisplayMode('ONCE')}
                           className="flex-1 p-4 rounded-xl text-left transition-all"
                           style={{
-                            background: formDisplayMode === 'once' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.02)',
-                            border: `1px solid ${formDisplayMode === 'once' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
+                            background: formDisplayMode === 'ONCE' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.02)',
+                            border: `1px solid ${formDisplayMode === 'ONCE' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
                           }}
                         >
                           <div className="flex items-center gap-2 mb-1">
                             <div 
                               className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
-                              style={{ borderColor: formDisplayMode === 'once' ? '#10b981' : '#525252' }}
+                              style={{ borderColor: formDisplayMode === 'ONCE' ? '#10b981' : '#525252' }}
                             >
-                              {formDisplayMode === 'once' && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                              {formDisplayMode === 'ONCE' && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
                             </div>
-                            <span className="text-sm font-medium" style={{ color: formDisplayMode === 'once' ? '#10b981' : '#e5e5e5' }}>
+                            <span className="text-sm font-medium" style={{ color: formDisplayMode === 'ONCE' ? '#10b981' : '#e5e5e5' }}>
                               Sadece Bir Kez
                             </span>
                           </div>
                           <p className="text-[10px] text-neutral-500 ml-6">Kullanici kapattiktan sonra tekrar gosterilmez</p>
                         </button>
                         <button
-                          onClick={() => setFormDisplayMode('every_login')}
+                          onClick={() => setFormDisplayMode('EVERY_LOGIN')}
                           className="flex-1 p-4 rounded-xl text-left transition-all"
                           style={{
-                            background: formDisplayMode === 'every_login' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255,255,255,0.02)',
-                            border: `1px solid ${formDisplayMode === 'every_login' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255,255,255,0.06)'}`,
+                            background: formDisplayMode === 'EVERY_LOGIN' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255,255,255,0.02)',
+                            border: `1px solid ${formDisplayMode === 'EVERY_LOGIN' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255,255,255,0.06)'}`,
                           }}
                         >
                           <div className="flex items-center gap-2 mb-1">
                             <div 
                               className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
-                              style={{ borderColor: formDisplayMode === 'every_login' ? '#fbbf24' : '#525252' }}
+                              style={{ borderColor: formDisplayMode === 'EVERY_LOGIN' ? '#fbbf24' : '#525252' }}
                             >
-                              {formDisplayMode === 'every_login' && <div className="w-2 h-2 rounded-full bg-amber-400" />}
+                              {formDisplayMode === 'EVERY_LOGIN' && <div className="w-2 h-2 rounded-full bg-amber-400" />}
                             </div>
-                            <span className="text-sm font-medium" style={{ color: formDisplayMode === 'every_login' ? '#fbbf24' : '#e5e5e5' }}>
+                            <span className="text-sm font-medium" style={{ color: formDisplayMode === 'EVERY_LOGIN' ? '#fbbf24' : '#e5e5e5' }}>
                               Her Giriste
                             </span>
                           </div>
@@ -2712,11 +2342,11 @@ showAsPopup: formShowPopup,
                     </button>
                     <button
                       onClick={createAnnouncement}
-                      disabled={!formTitle.trim() || !formContent.trim()}
+                      disabled={!formTitle.trim() || !formContent.trim() || isSaving}
                       className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-50"
                       style={{ background: 'rgba(168, 85, 247, 0.2)', border: '1px solid rgba(168, 85, 247, 0.4)', color: '#a855f7' }}
                     >
-                      Gonder
+                      {isSaving ? 'Gonderiliyor...' : 'Gonder'}
                     </button>
                   </div>
                 </div>
@@ -2727,41 +2357,82 @@ showAsPopup: formShowPopup,
           {/* Announcement List */}
           <div className="space-y-3">
             <span className="text-[10px] font-semibold text-neutral-500 tracking-wider">GONDERILEN DUYURULAR</span>
-            {announcements.map(ann => (
-              <div
-                key={ann.id}
-                className="p-4 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: getSeverityColor(ann.severity) }}
-                    />
-                    <h4 className="text-sm font-semibold text-white">{ann.title}</h4>
-                    <span 
-                      className="px-2 py-0.5 rounded text-[9px] font-semibold"
-                      style={{ background: `${getSeverityColor(ann.severity)}15`, color: getSeverityColor(ann.severity) }}
-                    >
-                      {getSeverityLabel(ann.severity)}
-                    </span>
-                    {ann.showAsPopup && (
-                      <span className="px-2 py-0.5 rounded text-[9px] font-medium" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7' }}>
-                        Popup
+            {isLoading ? (
+              <div className="p-8 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <Loader2 className="w-6 h-6 text-purple-400 mx-auto mb-2 animate-spin" />
+                <p className="text-sm text-neutral-500">Duyurular yukleniyor...</p>
+              </div>
+            ) : announcements.length === 0 ? (
+              <div className="p-8 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <Bell className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+                <p className="text-sm text-neutral-500">Henuz duyuru yok</p>
+              </div>
+            ) : (
+              announcements.map(ann => (
+                <div
+                  key={ann.id}
+                  className="p-4 rounded-xl"
+                  style={{ 
+                    background: 'rgba(255,255,255,0.02)', 
+                    border: `1px solid ${ann.isActive ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'}`,
+                    opacity: ann.isActive ? 1 : 0.6,
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: getSeverityColor(ann.severity) }}
+                      />
+                      <h4 className="text-sm font-semibold text-white">{ann.title}</h4>
+                      <span 
+                        className="px-2 py-0.5 rounded text-[9px] font-semibold"
+                        style={{ background: `${getSeverityColor(ann.severity)}15`, color: getSeverityColor(ann.severity) }}
+                      >
+                        {getSeverityLabel(ann.severity)}
                       </span>
+                      {ann.showAsPopup && (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-medium" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7' }}>
+                          Popup
+                        </span>
+                      )}
+                      {!ann.isActive && (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-medium" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
+                          Pasif
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-neutral-500">{new Date(ann.createdAt).toLocaleDateString('tr-TR')}</span>
+                      <button
+                        onClick={() => toggleAnnouncementActive(ann.id, !ann.isActive)}
+                        className="p-1 rounded hover:bg-white/5 transition-colors"
+                        title={ann.isActive ? 'Pasif yap' : 'Aktif yap'}
+                      >
+                        {ann.isActive ? <Pause size={12} className="text-amber-400" /> : <Play size={12} className="text-emerald-400" />}
+                      </button>
+                      <button
+                        onClick={() => deleteAnnouncement(ann.id)}
+                        className="p-1 rounded hover:bg-white/5 transition-colors"
+                        title="Sil"
+                      >
+                        <Trash2 size={12} className="text-red-400" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-400 mb-3">{ann.content}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-neutral-500">
+                    <span>Hedef: {getTargetTypeLabel(ann.targetType)}</span>
+                    {ann._count && (
+                      <>
+                        <span>•</span>
+                        <span>Okunma: {ann._count.readRecords}</span>
+                      </>
                     )}
                   </div>
-                  <span className="text-[10px] text-neutral-500">{ann.createdAt.toLocaleDateString('tr-TR')}</span>
                 </div>
-                <p className="text-xs text-neutral-400 mb-3">{ann.content}</p>
-                <div className="flex items-center gap-2 text-[10px] text-neutral-500">
-                  <span>Hedef: {ann.targetAudience.includes('all') ? 'Tum kullanicilar' : ann.targetAudience.join(', ')}</span>
-                  <span>•</span>
-                  <span>Gonderen: {ann.createdBy}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
@@ -2775,12 +2446,12 @@ showAsPopup: formShowPopup,
                 <Check className="w-5 h-5 text-emerald-500" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-white">Okunma Gecmisi</h4>
-                <p className="text-[11px] text-neutral-500">Kullanicilarin bildirimleri okuma kayitlari</p>
+                <h4 className="text-sm font-semibold text-white">Duyuru Istatistikleri</h4>
+                <p className="text-[11px] text-neutral-500">Duyurularin okunma bilgileri</p>
               </div>
             </div>
             <button
-              onClick={() => setReadRecords([...readRecordsStore])}
+              onClick={fetchAnnouncements}
               className="px-3 py-2 rounded-lg text-xs font-medium"
               style={{ background: 'rgba(255,255,255,0.05)', color: '#a3a3a3' }}
             >
@@ -2788,34 +2459,34 @@ showAsPopup: formShowPopup,
             </button>
           </div>
 
-          {/* Stats */}
+          {/* Stats from announcements */}
           <div className="grid grid-cols-3 gap-3">
             <div className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-2xl font-bold text-white">{readRecords.length}</p>
-              <p className="text-[11px] text-neutral-500 mt-1">Toplam Okuma</p>
+              <p className="text-2xl font-bold text-white">{announcements.length}</p>
+              <p className="text-[11px] text-neutral-500 mt-1">Toplam Duyuru</p>
             </div>
             <div className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-2xl font-bold text-emerald-500">{new Set(readRecords.map(r => r.userId)).size}</p>
-              <p className="text-[11px] text-neutral-500 mt-1">Benzersiz Kullanici</p>
+              <p className="text-2xl font-bold text-emerald-500">{announcements.filter(a => a.isActive).length}</p>
+              <p className="text-[11px] text-neutral-500 mt-1">Aktif Duyuru</p>
             </div>
             <div className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-2xl font-bold text-purple-400">{new Set(readRecords.map(r => r.announcementId)).size}</p>
-              <p className="text-[11px] text-neutral-500 mt-1">Okunan Duyuru</p>
+              <p className="text-2xl font-bold text-purple-400">{announcements.reduce((sum, a) => sum + (a._count?.readRecords || 0), 0)}</p>
+              <p className="text-[11px] text-neutral-500 mt-1">Toplam Okunma</p>
             </div>
           </div>
 
-          {/* Records List */}
+          {/* Per-announcement read stats */}
           <div className="space-y-2">
-            <span className="text-[10px] font-semibold text-neutral-500 tracking-wider">SON OKUMALAR</span>
-            {readRecords.length === 0 ? (
+            <span className="text-[10px] font-semibold text-neutral-500 tracking-wider">DUYURU BAZLI OKUNMA</span>
+            {announcements.length === 0 ? (
               <div className="p-8 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
                 <History className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
-                <p className="text-sm text-neutral-500">Henuz okuma kaydi yok</p>
+                <p className="text-sm text-neutral-500">Henuz duyuru yok</p>
               </div>
             ) : (
-              readRecords.map(record => (
+              announcements.map(ann => (
                 <motion.div
-                  key={record.id}
+                  key={ann.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="p-4 rounded-xl"
@@ -2823,29 +2494,33 @@ showAsPopup: formShowPopup,
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-neutral-800 flex items-center justify-center">
-                        <span className="text-xs font-medium text-neutral-400">
-                          {record.userName.split(' ').map(n => n[0]).join('')}
-                        </span>
+                      <div 
+                        className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ background: `${getSeverityColor(ann.severity)}15` }}
+                      >
+                        <Bell size={14} style={{ color: getSeverityColor(ann.severity) }} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-white">{record.userName}</p>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7' }}>
-                            {record.userRole}
+                          <p className="text-sm font-medium text-white">{ann.title}</p>
+                          <span 
+                            className="px-1.5 py-0.5 rounded text-[9px] font-medium" 
+                            style={{ background: `${getSeverityColor(ann.severity)}15`, color: getSeverityColor(ann.severity) }}
+                          >
+                            {getSeverityLabel(ann.severity)}
                           </span>
                         </div>
                         <p className="text-xs text-neutral-500 mt-0.5">
-                          <span className="text-emerald-500">Okudu:</span> {record.announcementTitle}
+                          <span className="text-emerald-500">{ann._count?.readRecords || 0}</span> kisi okudu
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-neutral-500">
-                        {record.readAt.toLocaleDateString('tr-TR')}
+                        {new Date(ann.createdAt).toLocaleDateString('tr-TR')}
                       </p>
-                      <p className="text-[10px] text-neutral-600">
-                        {record.readAt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      <p className="text-[10px]" style={{ color: ann.isActive ? '#10b981' : '#ef4444' }}>
+                        {ann.isActive ? 'Aktif' : 'Pasif'}
                       </p>
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 import { listUsers, listSites, listDepartmentsForCurrentAdmin } from "@/lib/admin-actions"
 import { getServerAuthContext } from "@/lib/server-auth"
-import { isAdminLike, isLimitedAccess, isSuperAdmin } from "@/lib/role-helpers"
+import { isSuperAdmin } from "@/lib/role-helpers"
 import { UsersTable } from "@/components/admin/users-table"
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,8 +27,8 @@ export default async function UsersPage({
     return null
   }
   
-  // Block MANAGER and STAFF
-  if (isLimitedAccess(auth.role)) {
+  // Only SUPER_ADMIN can access user management
+  if (!isSuperAdmin(auth.role)) {
     return (
       <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
         <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -79,8 +79,8 @@ export default async function UsersPage({
           </p>
         </div>
         
-        {/* Only SUPER_ADMIN and ADMIN can create users */}
-        {isAdminLike(auth.role) && (
+        {/* Only SUPER_ADMIN can create users */}
+        {isSuperAdmin(auth.role) && (
           <Link href="/admin/users/new">
             <Button className="gap-2 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
               <Plus className="w-4 h-4" />
