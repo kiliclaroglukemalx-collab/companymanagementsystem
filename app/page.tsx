@@ -20,8 +20,8 @@ import { dashboardCards as defaultCards, type DashboardCard, type Brand } from "
 
 
 // Dynamic imports for heavy components - Apple style lazy loading
-const NeonExpandedView = dynamic(
-  () => import("@/components/dashboard/neon-expanded-view").then(mod => ({ default: mod.NeonExpandedView })),
+const AnalyticsExpandedView = dynamic(
+  () => import("@/components/analysis/analytics-expanded-view").then(mod => ({ default: mod.AnalyticsExpandedView })),
   { ssr: false }
 )
 
@@ -377,7 +377,7 @@ function DashboardContent({
         {/* Modals - only loaded when needed */}
         <AnimatePresence>
           {selectedCard && (
-            <NeonExpandedView card={selectedCard} onClose={handleCloseExpanded} />
+            <AnalyticsExpandedView card={selectedCard} onClose={handleCloseExpanded} />
           )}
         </AnimatePresence>
 

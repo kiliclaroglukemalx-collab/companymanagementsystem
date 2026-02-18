@@ -29,14 +29,19 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      const cardResults = JSON.parse(analysis.response)
+      const parsed = JSON.parse(analysis.response)
+      // Support both old format (flat cardResults) and new format ({ cards, details })
+      const cards = parsed.cards || parsed
+      const details = parsed.details || null
+
       return NextResponse.json({
-        cardResults,
+        cardResults: cards,
+        details,
         reportId: analysis.id,
         generatedAt: analysis.createdAt,
       })
     } catch {
-      return NextResponse.json({ cardResults: null })
+      return NextResponse.json({ cardResults: null, details: null })
     }
   } catch (error) {
     console.error("Latest analytics error:", error)
