@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+
+export const maxDuration = 60
+export const dynamic = "force-dynamic"
+
 import { getServerAuthContext } from "@/lib/server-auth"
 import { basePrisma } from "@/lib/prisma"
 import { writeFile, mkdir } from "fs/promises"

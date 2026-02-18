@@ -101,44 +101,61 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
     setIsUploading(true)
     setStatusMsg({ type: null, message: "" })
 
-    try {
-      const formData = new FormData()
-      selectedFiles.forEach((file) => formData.append("file", file))
-      formData.append("siteId", selectedSiteId)
-      formData.append("fileType", "EXCEL")
-      formData.append("analyticModule", "UNASSIGNED")
+    const allUploads: UploadRecord[] = []
+    const errors: string[] = []
 
-      const res = await fetch("/api/data-upload/upload", { method: "POST", body: formData })
-      const data = await res.json().catch(() => null)
+    // Upload files one by one to avoid 413 body size limit
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i]
+      setStatusMsg({ type: null, message: `Yukleniyor: ${i + 1}/${selectedFiles.length} - ${file.name}` })
 
-      if (res.ok && data) {
-        const uploads: UploadRecord[] = data.uploads || (data.upload ? [data.upload] : [])
-        setUploadedRecords(uploads)
+      try {
+        const formData = new FormData()
+        formData.append("file", file)
+        formData.append("siteId", selectedSiteId)
+        formData.append("fileType", "EXCEL")
+        formData.append("analyticModule", "UNASSIGNED")
 
-        // Initialize module assignments
-        const assignments: Record<string, ModuleKey> = {}
-        for (const u of uploads) {
-          if (u.analyticModule && u.analyticModule !== "UNASSIGNED") {
-            assignments[u.id] = u.analyticModule as ModuleKey
-          }
+        const res = await fetch("/api/data-upload/upload", { method: "POST", body: formData })
+        const data = await res.json().catch(() => null)
+
+        if (res.ok && data) {
+          const uploads: UploadRecord[] = data.uploads || (data.upload ? [data.upload] : [])
+          allUploads.push(...uploads)
+        } else {
+          errors.push(`${file.name}: ${data?.error || "basarisiz"}`)
         }
-        setModuleAssignments(assignments)
-
-        setSelectedFiles([])
-        const fileInput = document.getElementById("file-upload") as HTMLInputElement
-        if (fileInput) fileInput.value = ""
-
-        setPhase("assign")
-        loadRecentUploads()
-      } else {
-        setStatusMsg({ type: "error", message: data?.error || "Yukleme basarisiz" })
+      } catch (e) {
+        errors.push(`${file.name}: baglanti hatasi`)
       }
-    } catch (e) {
-      console.error("Upload error:", e)
-      setStatusMsg({ type: "error", message: "Yukleme basarisiz" })
-    } finally {
-      setIsUploading(false)
     }
+
+    if (allUploads.length > 0) {
+      setUploadedRecords(allUploads)
+
+      const assignments: Record<string, ModuleKey> = {}
+      for (const u of allUploads) {
+        if (u.analyticModule && u.analyticModule !== "UNASSIGNED") {
+          assignments[u.id] = u.analyticModule as ModuleKey
+        }
+      }
+      setModuleAssignments(assignments)
+
+      setSelectedFiles([])
+      const fileInput = document.getElementById("file-upload") as HTMLInputElement
+      if (fileInput) fileInput.value = ""
+
+      if (errors.length > 0) {
+        setStatusMsg({ type: "error", message: `${allUploads.length} dosya yuklendi, ${errors.length} basarisiz: ${errors.join("; ")}` })
+      }
+
+      setPhase("assign")
+      loadRecentUploads()
+    } else {
+      setStatusMsg({ type: "error", message: errors.length > 0 ? errors.join("; ") : "Yukleme basarisiz" })
+    }
+
+    setIsUploading(false)
   }
 
   const handleCompute = async () => {
@@ -317,7 +334,7 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
                 )}
               >
                 {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
-                {isUploading ? "Yukleniyor..." : "Dosyalari Yukle"}
+                {isUploading ? (statusMsg.message || "Yukleniyor...") : "Dosyalari Yukle"}
               </button>
             </div>
 
