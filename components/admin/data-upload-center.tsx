@@ -136,19 +136,64 @@ export function DataUploadCenter({ auth }: DataUploadCenterProps) {
         let res: Response
 
         if (file.size > MAX_RAW_UPLOAD_SIZE) {
-          // Large file: parse in browser, send JSON
+          // Large file: parse in browser, send JSON in chunks per sheet
           const parsedSheets = await parseExcelInBrowser(file)
-          res = await fetch("/api/data-upload/upload-parsed", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              siteId: selectedSiteId,
-              fileName: file.name,
-              fileSize: file.size,
-              analyticModule: "UNASSIGNED",
-              parsedSheets,
-            }),
-          })
+          let chunkUploaded = false
+
+          // Split sheets into chunks that fit under 4MB JSON
+          const chunks: Record<string, Record<string, unknown>[]>[] = []
+          let currentChunk: Record<string, Record<string, unknown>[]> = {}
+          let currentSize = 0
+
+          for (const [sheetName, rows] of Object.entries(parsedSheets)) {
+            const sheetJson = JSON.stringify({ [sheetName]: rows })
+            const sheetSize = new Blob([sheetJson]).size
+
+            if (currentSize + sheetSize > 3.5 * 1024 * 1024 && Object.keys(currentChunk).length > 0) {
+              chunks.push(currentChunk)
+              currentChunk = {}
+              currentSize = 0
+            }
+
+            // If single sheet is still too large, split its rows
+            if (sheetSize > 3.5 * 1024 * 1024) {
+              const rowsPerChunk = Math.floor(rows.length / Math.ceil(sheetSize / (3 * 1024 * 1024)))
+              for (let r = 0; r < rows.length; r += rowsPerChunk) {
+                chunks.push({ [`${sheetName}_part${Math.floor(r / rowsPerChunk) + 1}`]: rows.slice(r, r + rowsPerChunk) })
+              }
+            } else {
+              currentChunk[sheetName] = rows
+              currentSize += sheetSize
+            }
+          }
+          if (Object.keys(currentChunk).length > 0) chunks.push(currentChunk)
+
+          for (let c = 0; c < chunks.length; c++) {
+            const chunkName = chunks.length > 1 ? `${file.name} (parca ${c + 1}/${chunks.length})` : file.name
+            setStatusMsg({ type: null, message: `Yukleniyor: ${i + 1}/${selectedFiles.length} - ${chunkName}` })
+
+            const chunkRes = await fetch("/api/data-upload/upload-parsed", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                siteId: selectedSiteId,
+                fileName: file.name,
+                fileSize: file.size,
+                analyticModule: "UNASSIGNED",
+                parsedSheets: chunks[c],
+              }),
+            })
+            const chunkData = await chunkRes.json().catch(() => null)
+            if (chunkRes.ok && chunkData) {
+              const uploads: UploadRecord[] = chunkData.uploads || (chunkData.upload ? [chunkData.upload] : [])
+              allUploads.push(...uploads)
+              chunkUploaded = true
+            }
+          }
+
+          if (chunkUploaded) continue
+          errors.push(`${file.name}: veri gonderilemedi`)
+          continue
         } else {
           // Small file: upload normally
           const formData = new FormData()
